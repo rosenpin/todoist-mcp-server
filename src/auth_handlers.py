@@ -137,17 +137,17 @@ AUTH_PAGE_TEMPLATE = """
     <div class="container">
         <h1>{{ server_name }}</h1>
         <p class="subtitle">Connect your Todoist account</p>
-        
+
         <div id="error" class="error"></div>
         <div id="success" class="success"></div>
-        
+
         <form id="authForm">
             <div class="form-group">
                 <label for="todoist_token">Todoist API Token</label>
-                <input type="password" id="todoist_token" name="todoist_token" required 
+                <input type="password" id="todoist_token" name="todoist_token" required
                        placeholder="Enter your Todoist API token">
                 <p class="help-text">
-                    Get your API token from 
+                    Get your API token from
                     <a href="https://todoist.com/prefs/integrations" target="_blank">
                         Todoist Settings → Integrations
                     </a>
@@ -164,24 +164,24 @@ AUTH_PAGE_TEMPLATE = """
             <button class="copy-button" onclick="copyUrl()">Copy URL</button>
         </div>
     </div>
-    
+
     <script>
         const form = document.getElementById('authForm');
         const errorDiv = document.getElementById('error');
         const successDiv = document.getElementById('success');
         const submitBtn = document.getElementById('submitBtn');
         const resultDiv = document.getElementById('result');
-        
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
             submitBtn.disabled = true;
             submitBtn.textContent = 'Creating...';
-            
+
             const todoist_token = document.getElementById('todoist_token').value;
-            
+
             try {
                 const response = await fetch('/auth/create', {
                     method: 'POST',
@@ -190,9 +190,9 @@ AUTH_PAGE_TEMPLATE = """
                     },
                     body: JSON.stringify({ todoist_token }),
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
                     form.style.display = 'none';
                     resultDiv.style.display = 'block';
@@ -209,7 +209,7 @@ AUTH_PAGE_TEMPLATE = """
                 submitBtn.textContent = 'Create Integration';
             }
         });
-        
+
         function copyUrl() {
             const urlText = document.getElementById('integrationUrl').textContent;
             navigator.clipboard.writeText(urlText).then(() => {
