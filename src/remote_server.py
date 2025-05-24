@@ -51,12 +51,12 @@ async def health_check(request: Request) -> JSONResponse:
 
 async def auth_page_handler(request: Request) -> HTMLResponse:
     """Show authentication page."""
-    return await request.app.state.auth_handlers.show_auth_page(request)
+    return await request.app.state.auth_handlers.show_auth_page(request)  # type: ignore[no-any-return]
 
 
 async def create_integration_handler(request: Request) -> JSONResponse:
     """Create new integration."""
-    return await request.app.state.auth_handlers.create_integration(request)
+    return await request.app.state.auth_handlers.create_integration(request)  # type: ignore[no-any-return]
 
 
 async def websocket_endpoint(websocket: WebSocket) -> None:

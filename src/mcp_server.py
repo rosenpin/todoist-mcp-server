@@ -28,7 +28,7 @@ class TodoistMCPServer:
     def _setup_handlers(self) -> None:
         """Set up MCP server handlers."""
 
-        @self.server.list_tools()
+        @self.server.list_tools()  # type: ignore[misc]
         async def list_tools() -> list[Tool]:
             return [
                 Tool(
@@ -144,7 +144,7 @@ class TodoistMCPServer:
                 ),
             ]
 
-        @self.server.call_tool()
+        @self.server.call_tool()  # type: ignore[misc]
         async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
             if not self.todoist_client:
                 # In remote mode, the client is pre-initialized

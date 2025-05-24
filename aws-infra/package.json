@@ -1,0 +1,29 @@
+{
+  "name": "todoist-mcp-infra",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "bin": "bin"
+  },
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --all",
+    "destroy": "cdk destroy",
+    "diff": "cdk diff"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "AWS Infrastructure for Todoist MCP Server",
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "aws-cdk": "^2.1007.0",
+    "aws-cdk-lib": "^2.187.0",
+    "constructs": "^10.4.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
