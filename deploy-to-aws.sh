@@ -4,7 +4,7 @@
 set -e
 
 # Configuration
-AWS_REGION="us-east-1"
+AWS_REGION="us-west-1"
 ENVIRONMENT="prod"
 DOMAIN_NAME="" # Set this if you want SSL with your domain
 
@@ -18,7 +18,7 @@ usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -r, --region REGION      AWS region (default: us-east-1)"
+    echo "  -r, --region REGION      AWS region (default: us-west-1)"
     echo "  -e, --env ENVIRONMENT    Environment name (default: prod)"
     echo "  -d, --domain DOMAIN      Domain name for SSL (optional)"
     echo "  -i, --initial            Perform initial deployment (deploy infrastructure)"

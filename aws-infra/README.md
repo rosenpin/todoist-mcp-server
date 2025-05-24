@@ -20,7 +20,7 @@ This directory contains AWS CDK infrastructure code for deploying the Todoist MC
 
 ## Environment Variables
 
-- `AWS_REGION`: Target AWS region (default: us-east-1)
+- `AWS_REGION`: Target AWS region (default: us-west-1)
 - `ENVIRONMENT`: Environment name (default: prod)
 - `DOMAIN_NAME`: Optional custom domain for SSL
 

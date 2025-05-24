@@ -13,7 +13,7 @@ const environment = process.env.ENVIRONMENT || 'prod';
 const domainName = process.env.DOMAIN_NAME; // Optional domain for SSL
 const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
-  region: process.env.AWS_REGION || 'us-east-1'
+  region: process.env.AWS_REGION || 'us-west-1'
 };
 
 console.log(`Deploying Todoist MCP Server infrastructure for ${environment} environment`);
@@ -66,6 +66,7 @@ const ecsStack = new TodoistMcpEcsStack(app, 'TodoistMcpEcsStack', {
   env,
   vpc: networkStack.vpc,
   targetGroup: albStack.targetGroup,
+  loadBalancer: albStack.loadBalancer,
   appRepository: ecrStack.appRepository,
   fileSystem: efsStack.fileSystem,
   accessPoint: efsStack.accessPoint,
