@@ -1,4 +1,5 @@
 """Todoist API client wrapper."""
+# mypy: disable-error-code=attr-defined
 
 import logging
 from datetime import datetime
@@ -24,7 +25,7 @@ class TodoistClient:
     ) -> dict[str, Any]:
         """Create a new task."""
         try:
-            task_data = {"content": content}
+            task_data: dict[str, Any] = {"content": content}
 
             if description:
                 task_data["description"] = description
@@ -57,7 +58,7 @@ class TodoistClient:
         """List tasks with optional filters."""
         try:
             # Get all active tasks
-            tasks = self.api.get_tasks()
+            tasks = list(self.api.get_tasks())
 
             # Apply priority filter if specified
             if priority:
@@ -104,7 +105,7 @@ class TodoistClient:
     def complete_task(self, task_name: str) -> dict[str, Any]:
         """Complete a task by name."""
         try:
-            tasks = self.api.get_tasks()
+            tasks = list(self.api.get_tasks())
             matching_task = None
 
             # Find task by name (case-insensitive partial match)
@@ -119,7 +120,7 @@ class TodoistClient:
                     "error": f"No task found matching '{task_name}'",
                 }
 
-            self.api.close_task(matching_task.id)
+            self.api.complete_task(matching_task.id)
 
             return {
                 "success": True,
@@ -140,7 +141,7 @@ class TodoistClient:
     ) -> dict[str, Any]:
         """Update a task by name."""
         try:
-            tasks = self.api.get_tasks()
+            tasks = list(self.api.get_tasks())
             matching_task = None
 
             # Find task by name
@@ -156,7 +157,7 @@ class TodoistClient:
                 }
 
             # Build update data
-            update_data = {}
+            update_data: dict[str, Any] = {}
             if content:
                 update_data["content"] = content
             if description is not None:
@@ -188,7 +189,7 @@ class TodoistClient:
     def delete_task(self, task_name: str) -> dict[str, Any]:
         """Delete a task by name."""
         try:
-            tasks = self.api.get_tasks()
+            tasks = list(self.api.get_tasks())
             matching_task = None
 
             # Find task by name

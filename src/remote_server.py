@@ -3,21 +3,22 @@
 
 import logging
 import os
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from mcp.server.websocket import websocket_server
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse, RedirectResponse
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket
 
-from .config import SERVER_NAME, SERVER_VERSION
-from .mcp_server import TodoistMCPServer
-from .auth_handlers import AuthHandlers
-from .auth_service import AuthService
-from .todoist_client import TodoistClient
+from auth_handlers import AuthHandlers
+from auth_service import AuthService
+from config import SERVER_NAME, SERVER_VERSION
+from mcp_server import TodoistMCPServer
+from todoist_client import TodoistClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,19 +37,29 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     logger.info("Shutting down...")
 
 
-async def home(request):
+async def home(request: Request) -> RedirectResponse:
     """Redirect to auth page."""
     return RedirectResponse(url="/auth")
 
 
-async def health_check(request):
+async def health_check(request: Request) -> JSONResponse:
     """Health check endpoint."""
     return JSONResponse(
         {"status": "healthy", "server": SERVER_NAME, "version": SERVER_VERSION}
     )
 
 
-async def websocket_endpoint(websocket: WebSocket):
+async def auth_page_handler(request: Request) -> HTMLResponse:
+    """Show authentication page."""
+    return await request.app.state.auth_handlers.show_auth_page(request)
+
+
+async def create_integration_handler(request: Request) -> JSONResponse:
+    """Create new integration."""
+    return await request.app.state.auth_handlers.create_integration(request)
+
+
+async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for MCP communication."""
     # Extract integration ID from path
     path_parts = websocket.url.path.strip("/").split("/")
@@ -91,16 +102,8 @@ app = Starlette(
     routes=[
         Route("/", home, methods=["GET"]),
         Route("/health", health_check, methods=["GET"]),
-        Route(
-            "/auth",
-            endpoint=lambda r: r.app.state.auth_handlers.show_auth_page(r),
-            methods=["GET"],
-        ),
-        Route(
-            "/auth/create",
-            endpoint=lambda r: r.app.state.auth_handlers.create_integration(r),
-            methods=["POST"],
-        ),
+        Route("/auth", auth_page_handler, methods=["GET"]),
+        Route("/auth/create", create_integration_handler, methods=["POST"]),
         WebSocketRoute("/mcp/{integration_id}", websocket_endpoint),
     ],
 )

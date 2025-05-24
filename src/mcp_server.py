@@ -8,9 +8,9 @@ from typing import Any
 from mcp.server import Server
 from mcp.types import TextContent, Tool
 
-from .auth_manager import AuthManager
-from .config import SERVER_NAME
-from .todoist_client import TodoistClient
+from auth_manager import AuthManager
+from config import SERVER_NAME
+from todoist_client import TodoistClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class TodoistMCPServer:
     """MCP server for Todoist task management."""
 
     def __init__(self) -> None:
-        self.server = Server(SERVER_NAME)
+        self.server: Server = Server(SERVER_NAME)
         self.auth_manager = AuthManager()
         self.todoist_client: TodoistClient | None = None
         self._setup_handlers()
@@ -230,9 +230,7 @@ class TodoistMCPServer:
 
         async with stdio_server() as streams:
             await self.server.run(
-                streams[0],
-                streams[1],
-                self.server.create_initialization_options()
+                streams[0], streams[1], self.server.create_initialization_options()
             )
 
 

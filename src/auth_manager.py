@@ -2,7 +2,7 @@
 
 from tinydb import Query, TinyDB
 
-from .config import DB_PATH
+from config import DB_PATH
 
 
 class AuthManager:
@@ -18,7 +18,7 @@ class AuthManager:
         result = self.tokens_table.get(Token.type == "todoist_api")
 
         if result:
-            return result["token"]
+            return str(result["token"])  # type: ignore
 
         # If no token stored, prompt user
         token = input("Please enter your Todoist API token: ").strip()

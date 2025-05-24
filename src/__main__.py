@@ -4,8 +4,8 @@
 import asyncio
 import sys
 
-from .auth_manager import AuthManager
-from .mcp_server import TodoistMCPServer
+from auth_manager import AuthManager
+from mcp_server import TodoistMCPServer
 
 
 async def main() -> None:

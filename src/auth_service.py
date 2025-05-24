@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlparse
 from pydantic import BaseModel
 from tinydb import Query, TinyDB
 
-from .config import DB_PATH
+from config import DB_PATH
 
 
 class Integration(BaseModel):
@@ -25,7 +25,7 @@ class Integration(BaseModel):
 class AuthService:
     """Manages multi-user authentication and integration tokens."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.db = TinyDB(DB_PATH)
         self.integrations = self.db.table("integrations")
 
@@ -70,7 +70,7 @@ class AuthService:
                 {"last_used": datetime.now(timezone.utc).isoformat()},
                 Integration_q.integration_id == integration_id,
             )
-            return Integration(**result)
+            return Integration(**result)  # type: ignore[arg-type]
 
         return None
 

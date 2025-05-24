@@ -1,13 +1,12 @@
 """Authentication handlers for the web interface."""
 
-from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
-from starlette.templating import Jinja2Templates
 from pathlib import Path
 
-from .auth_service import AuthService
-from .config import SERVER_NAME
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, JSONResponse
 
+from auth_service import AuthService
+from config import SERVER_NAME
 
 # Create templates directory
 templates_dir = Path(__file__).parent / "templates"
@@ -154,10 +153,10 @@ AUTH_PAGE_TEMPLATE = """
                     </a>
                 </p>
             </div>
-            
+
             <button type="submit" id="submitBtn">Create Integration</button>
         </form>
-        
+
         <div id="result" style="display: none;">
             <h2>Integration Created!</h2>
             <p>Copy this URL and add it as a remote MCP integration in Claude:</p>
