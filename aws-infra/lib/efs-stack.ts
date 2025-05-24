@@ -21,6 +21,9 @@ export class TodoistMcpEfsStack extends cdk.Stack {
       encrypted: true,
       lifecyclePolicy: efs.LifecyclePolicy.AFTER_30_DAYS, // Move to IA after 30 days
       removalPolicy: cdk.RemovalPolicy.RETAIN, // Retain data on stack deletion
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC, // Use public subnets
+      },
     });
 
     // Create access point for the application

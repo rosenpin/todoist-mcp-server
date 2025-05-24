@@ -3,7 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import { TodoistMcpNetworkStack } from '../lib/network-stack';
 import { TodoistMcpEcrStack } from '../lib/ecr-stack';
 import { TodoistMcpEfsStack } from '../lib/efs-stack';
-import { TodoistMcpAlbStack } from '../lib/alb-stack';
+import { TodoistMcpApiGatewayStack } from '../lib/api-gateway-stack';
 import { TodoistMcpEcsStack } from '../lib/ecs-stack';
 
 const app = new cdk.App();
@@ -18,7 +18,7 @@ const env = {
 
 console.log(`Deploying Todoist MCP Server infrastructure for ${environment} environment`);
 
-// Create the VPC stack
+// Create the VPC stack (now with only public subnets, no NAT Gateway)
 const networkStack = new TodoistMcpNetworkStack(app, 'TodoistMcpNetworkStack', {
   env,
   description: `Todoist MCP Server networking infrastructure (${environment})`,
@@ -49,24 +49,22 @@ const efsStack = new TodoistMcpEfsStack(app, 'TodoistMcpEfsStack', {
   }
 });
 
-// Create the ALB stack
-const albStack = new TodoistMcpAlbStack(app, 'TodoistMcpAlbStack', {
+// Create the API Gateway WebSocket stack (replaces ALB)
+const apiGatewayStack = new TodoistMcpApiGatewayStack(app, 'TodoistMcpApiGatewayStack', {
   env,
   vpc: networkStack.vpc,
   domainName: domainName,
-  description: `Todoist MCP Server application load balancer (${environment})`,
+  description: `Todoist MCP Server API Gateway WebSocket (${environment})`,
   tags: {
     Environment: environment,
     Project: 'TodoistMcpServer'
   }
 });
 
-// Create the ECS stack
+// Create the ECS stack (now with public IP assignment)
 const ecsStack = new TodoistMcpEcsStack(app, 'TodoistMcpEcsStack', {
   env,
   vpc: networkStack.vpc,
-  targetGroup: albStack.targetGroup,
-  loadBalancer: albStack.loadBalancer,
   appRepository: ecrStack.appRepository,
   fileSystem: efsStack.fileSystem,
   accessPoint: efsStack.accessPoint,
@@ -79,8 +77,16 @@ const ecsStack = new TodoistMcpEcsStack(app, 'TodoistMcpEcsStack', {
 
 // Add explicit dependencies
 efsStack.addDependency(networkStack);
-albStack.addDependency(networkStack);
+apiGatewayStack.addDependency(networkStack);
 ecsStack.addDependency(networkStack);
-ecsStack.addDependency(albStack);
 ecsStack.addDependency(ecrStack);
 ecsStack.addDependency(efsStack);
+
+// Output cost-saving summary
+console.log('\n=== Cost-Optimized Architecture ===');
+console.log('✓ No NAT Gateway (saves ~$45/month)');
+console.log('✓ API Gateway WebSocket instead of ALB (saves ~$20/month)');
+console.log('✓ Public IP assignment for Fargate tasks');
+console.log('✓ EFS for persistent storage');
+console.log('✓ Estimated monthly cost: ~$5-10');
+console.log('===================================\n');

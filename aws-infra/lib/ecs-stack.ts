@@ -1,17 +1,15 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
-import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as efs from 'aws-cdk-lib/aws-efs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
 import { Construct } from 'constructs';
 
 export interface TodoistMcpEcsStackProps extends cdk.StackProps {
   vpc: ec2.Vpc;
-  targetGroup: elbv2.ApplicationTargetGroup;
-  loadBalancer: elbv2.ApplicationLoadBalancer;
   appRepository: ecr.Repository;
   fileSystem: efs.FileSystem;
   accessPoint: efs.AccessPoint;
@@ -20,6 +18,7 @@ export interface TodoistMcpEcsStackProps extends cdk.StackProps {
 export class TodoistMcpEcsStack extends cdk.Stack {
   public readonly cluster: ecs.Cluster;
   public readonly service: ecs.FargateService;
+  public readonly serviceDiscoveryService: servicediscovery.IService;
 
   constructor(scope: Construct, id: string, props: TodoistMcpEcsStackProps) {
     super(scope, id, props);
@@ -28,6 +27,12 @@ export class TodoistMcpEcsStack extends cdk.Stack {
     this.cluster = new ecs.Cluster(this, 'TodoistMcpCluster', {
       vpc: props.vpc,
       clusterName: 'todoist-mcp-cluster',
+    });
+
+    // Create Cloud Map namespace for service discovery
+    const namespace = new servicediscovery.PrivateDnsNamespace(this, 'TodoistMcpNamespace', {
+      name: 'todoist-mcp.local',
+      vpc: props.vpc,
     });
 
     // Create task execution role
@@ -108,11 +113,11 @@ export class TodoistMcpEcsStack extends cdk.Stack {
       allowAllOutbound: true,
     });
 
-    // Allow inbound traffic from ALB
+    // Allow inbound WebSocket traffic
     ecsSecurityGroup.addIngressRule(
-      ec2.Peer.securityGroupId(props.loadBalancer.connections.securityGroups[0].securityGroupId),
+      ec2.Peer.anyIpv4(),
       ec2.Port.tcp(8765),
-      'Allow inbound from ALB'
+      'Allow WebSocket connections'
     );
 
     // Allow EFS access
@@ -122,7 +127,7 @@ export class TodoistMcpEcsStack extends cdk.Stack {
       'Allow EFS access'
     );
 
-    // Create Fargate service
+    // Create Fargate service with public IP assignment
     this.service = new ecs.FargateService(this, 'TodoistMcpService', {
       cluster: this.cluster,
       taskDefinition: taskDefinition,
@@ -130,13 +135,20 @@ export class TodoistMcpEcsStack extends cdk.Stack {
       desiredCount: 1,
       securityGroups: [ecsSecurityGroup],
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        subnetType: ec2.SubnetType.PUBLIC,
       },
+      assignPublicIp: true, // Assign public IP for internet access without NAT
       enableExecuteCommand: true, // Enable ECS Exec for debugging
+      cloudMapOptions: {
+        name: 'todoist-mcp',
+        cloudMapNamespace: namespace,
+        dnsRecordType: servicediscovery.DnsRecordType.A,
+        dnsTtl: cdk.Duration.seconds(10),
+      },
     });
 
-    // Attach the service to the target group
-    this.service.attachToApplicationTargetGroup(props.targetGroup);
+    // Get the service discovery service reference
+    this.serviceDiscoveryService = this.service.cloudMapService!;
 
     // Auto-scaling configuration
     const scaling = this.service.autoScaleTaskCount({
@@ -161,6 +173,12 @@ export class TodoistMcpEcsStack extends cdk.Stack {
       value: this.service.serviceName,
       description: 'The name of the ECS service',
       exportName: 'TodoistMcpServiceName',
+    });
+
+    new cdk.CfnOutput(this, 'ServiceDiscoveryName', {
+      value: `todoist-mcp.todoist-mcp.local`,
+      description: 'The service discovery name for internal access',
+      exportName: 'TodoistMcpServiceDiscoveryName',
     });
   }
 }

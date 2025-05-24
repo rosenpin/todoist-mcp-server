@@ -8,20 +8,15 @@ export class TodoistMcpNetworkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Create a VPC with public and private subnets across 2 availability zones
+    // Create a VPC with only public subnets (no NAT Gateway for cost savings)
     this.vpc = new ec2.Vpc(this, 'TodoistMcpVPC', {
       vpcName: 'todoist-mcp-vpc',
       maxAzs: 2,
-      natGateways: 1,
+      natGateways: 0, // No NAT Gateway to save costs
       subnetConfiguration: [
         {
           name: 'public',
           subnetType: ec2.SubnetType.PUBLIC,
-          cidrMask: 24,
-        },
-        {
-          name: 'private',
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
           cidrMask: 24,
         },
       ],
