@@ -14,6 +14,20 @@ export class TodoistMcpEfsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: TodoistMcpEfsStackProps) {
     super(scope, id, props);
 
+    // Create security group for EFS
+    const efsSecurityGroup = new ec2.SecurityGroup(this, 'EfsSecurityGroup', {
+      vpc: props.vpc,
+      description: 'Security group for EFS mount targets',
+      allowAllOutbound: true,
+    });
+
+    // Allow NFS traffic from within the VPC
+    efsSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+      ec2.Port.tcp(2049),
+      'Allow NFS traffic from VPC'
+    );
+
     // Create EFS file system for TinyDB persistence
     this.fileSystem = new efs.FileSystem(this, 'TodoistMcpEfs', {
       vpc: props.vpc,
@@ -24,6 +38,7 @@ export class TodoistMcpEfsStack extends cdk.Stack {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PUBLIC, // Use public subnets
       },
+      securityGroup: efsSecurityGroup,
     });
 
     // Create access point for the application

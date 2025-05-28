@@ -10,7 +10,7 @@ import { Construct } from 'constructs';
 
 export interface TodoistMcpEcsStackProps extends cdk.StackProps {
   vpc: ec2.Vpc;
-  appRepository: ecr.Repository;
+  appRepository: ecr.IRepository;
   fileSystem: efs.FileSystem;
   accessPoint: efs.AccessPoint;
 }
@@ -81,7 +81,7 @@ export class TodoistMcpEcsStack extends cdk.Stack {
 
     // Add container to task definition
     const container = taskDefinition.addContainer('TodoistMcpContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(props.appRepository, 'latest'),
+      image: ecs.ContainerImage.fromEcrRepository(props.appRepository, 'amd64-v3'),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'todoist-mcp',
         logGroup: logGroup,
@@ -90,7 +90,6 @@ export class TodoistMcpEcsStack extends cdk.Stack {
         PORT: '8765',
         DATA_PATH: '/app/data',
       },
-      command: ['python', '-m', 'src.remote_server'],
     });
 
     // Add mount points to the container

@@ -21,6 +21,8 @@ RUN mkdir -p /root/.todoist-mcp
 # Expose port for WebSocket server (if needed in future)
 EXPOSE 8765
 
-# Default to running local stdio server
-# Override with: docker run ... python -m src.remote_server
-CMD [".venv/bin/python", "-m", "src"]
+# Set the virtual environment in PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Run the remote server for deployment
+CMD ["python", "-m", "src.remote_server"]

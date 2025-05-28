@@ -14,11 +14,11 @@ from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket
 
-from auth_handlers import AuthHandlers
-from auth_service import AuthService
-from config import SERVER_NAME, SERVER_VERSION
-from mcp_server import TodoistMCPServer
-from todoist_client import TodoistClient
+from .auth_handlers import AuthHandlers
+from .auth_service import AuthService
+from .config import SERVER_NAME, SERVER_VERSION
+from .mcp_server import TodoistMCPServer
+from .todoist_client import TodoistClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
