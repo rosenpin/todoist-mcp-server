@@ -24,5 +24,5 @@ EXPOSE 8765
 # Set the virtual environment in PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Run the remote server for deployment
-CMD ["python", "-m", "src.remote_server"]
+# Run the FastMCP integrated server for deployment
+CMD ["python", "-m", "src.fastmcp_integrated"]
