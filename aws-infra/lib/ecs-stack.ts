@@ -123,8 +123,9 @@ export class TodoistMcpEcsStack extends cdk.Stack {
     ecsSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(8765),
-      'Allow WebSocket connections'
+      'Allow main HTTP server'
     );
+    
 
     // Allow EFS access
     ecsSecurityGroup.addIngressRule(

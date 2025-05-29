@@ -18,11 +18,11 @@ RUN uv venv && \
 # Create directory for database
 RUN mkdir -p /root/.todoist-mcp
 
-# Expose port for WebSocket server (if needed in future)
+# Expose port for FastMCP SSE server
 EXPOSE 8765
 
 # Set the virtual environment in PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Run the modern FastMCP server for deployment
-CMD ["python", "-m", "src.modern_fastmcp"]
+# Run the clean native FastMCP server
+CMD ["python", "-m", "src.native_server"]

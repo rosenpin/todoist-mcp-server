@@ -105,3 +105,7 @@ class AuthService:
     def list_integrations(self) -> list[Integration]:
         """List all integrations (for admin purposes)."""
         return [Integration(**doc) for doc in self.integrations.all()]
+
+    def get_all_integrations(self) -> list[Integration]:
+        """Get all integrations."""
+        return self.list_integrations()
