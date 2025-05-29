@@ -2,7 +2,7 @@
 
 from tinydb import Query, TinyDB
 
-from config import DB_PATH
+from .config import DB_PATH
 
 
 class AuthManager:

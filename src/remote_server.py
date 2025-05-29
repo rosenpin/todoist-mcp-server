@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Remote MCP server implementation with WebSocket and HTTP support."""
 
+import asyncio
+import json
 import logging
 import os
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -13,6 +16,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket
+from sse_starlette import EventSourceResponse
 
 from .auth_handlers import AuthHandlers
 from .auth_service import AuthService
@@ -57,6 +61,54 @@ async def auth_page_handler(request: Request) -> HTMLResponse:
 async def create_integration_handler(request: Request) -> JSONResponse:
     """Create new integration."""
     return await request.app.state.auth_handlers.create_integration(request)  # type: ignore[no-any-return]
+
+
+async def sse_endpoint(request: Request) -> EventSourceResponse:
+    """SSE endpoint for MCP communication."""
+    # Extract integration ID from path
+    integration_id = request.path_params.get("integration_id")
+    if not integration_id:
+        return JSONResponse({"error": "Missing integration ID"}, status_code=400)
+
+    # Get auth service from app state
+    auth_service = request.app.state.auth_service
+
+    # Validate integration ID and get Todoist token
+    todoist_token = auth_service.get_todoist_token(integration_id)
+    if not todoist_token:
+        return JSONResponse({"error": "Invalid integration ID"}, status_code=401)
+
+    # Create MCP server instance with user's Todoist client
+    mcp_server = TodoistMCPServer()
+    # Pre-initialize the Todoist client with the user's token
+    mcp_server.todoist_client = TodoistClient(todoist_token)
+
+    logger.info(
+        f"SSE connection established for integration: {integration_id[:8]}..."
+    )
+
+    async def event_generator():
+        """Generate SSE events for MCP communication."""
+        # TODO: Implement MCP-over-SSE protocol
+        yield {
+            "event": "open",
+            "data": json.dumps({
+                "type": "connection",
+                "status": "connected",
+                "server": SERVER_NAME,
+                "version": SERVER_VERSION
+            })
+        }
+        
+        # Keep connection alive
+        while True:
+            await asyncio.sleep(30)
+            yield {
+                "event": "ping",
+                "data": json.dumps({"timestamp": time.time()})
+            }
+
+    return EventSourceResponse(event_generator())
 
 
 async def websocket_endpoint(websocket: WebSocket) -> None:
@@ -104,7 +156,8 @@ app = Starlette(
         Route("/health", health_check, methods=["GET"]),
         Route("/auth", auth_page_handler, methods=["GET"]),
         Route("/auth/create", create_integration_handler, methods=["POST"]),
-        WebSocketRoute("/mcp/{integration_id}", websocket_endpoint),
+        Route("/sse/{integration_id}", sse_endpoint, methods=["GET"]),  # SSE for MCP
+        WebSocketRoute("/mcp/{integration_id}", websocket_endpoint),  # Keep WebSocket for compatibility
     ],
 )
 
@@ -120,9 +173,12 @@ app.add_middleware(
 if __name__ == "__main__":
     import uvicorn
 
+    port = int(os.getenv("PORT", 8765))
+    print(f"Starting server on port {port}...")
+    
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8765,
+        port=port,
         log_level="info",
     )

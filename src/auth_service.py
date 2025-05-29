@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlparse
 from pydantic import BaseModel
 from tinydb import Query, TinyDB
 
-from config import DB_PATH
+from .config import DB_PATH
 
 
 class Integration(BaseModel):

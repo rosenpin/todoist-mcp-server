@@ -5,6 +5,7 @@ import { TodoistMcpEcrStack } from '../lib/ecr-stack';
 import { TodoistMcpEfsStack } from '../lib/efs-stack';
 import { TodoistMcpApiGatewayStack } from '../lib/api-gateway-stack';
 import { TodoistMcpEcsStack } from '../lib/ecs-stack';
+import { TodoistMcpHttpApiStack } from '../lib/http-api-stack';
 
 const app = new cdk.App();
 
@@ -75,12 +76,26 @@ const ecsStack = new TodoistMcpEcsStack(app, 'TodoistMcpEcsStack', {
   }
 });
 
+// Create the HTTP API stack for SSE support
+const httpApiStack = new TodoistMcpHttpApiStack(app, 'TodoistMcpHttpApiStack', {
+  env,
+  vpc: networkStack.vpc,
+  ecsService: ecsStack.service,
+  serviceDiscoveryService: ecsStack.serviceDiscoveryService,
+  description: `Todoist MCP Server HTTP API with SSE support (${environment})`,
+  tags: {
+    Environment: environment,
+    Project: 'TodoistMcpServer'
+  }
+});
+
 // Add explicit dependencies
 efsStack.addDependency(networkStack);
 apiGatewayStack.addDependency(networkStack);
 ecsStack.addDependency(networkStack);
 ecsStack.addDependency(ecrStack);
 ecsStack.addDependency(efsStack);
+httpApiStack.addDependency(ecsStack);
 
 // Output cost-saving summary
 console.log('\n=== Cost-Optimized Architecture ===');

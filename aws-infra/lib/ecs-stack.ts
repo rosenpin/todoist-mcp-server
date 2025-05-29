@@ -81,7 +81,7 @@ export class TodoistMcpEcsStack extends cdk.Stack {
 
     // Add container to task definition
     const container = taskDefinition.addContainer('TodoistMcpContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(props.appRepository, 'amd64-v3'),
+      image: ecs.ContainerImage.fromEcrRepository(props.appRepository, 'latest'),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'todoist-mcp',
         logGroup: logGroup,
@@ -112,7 +112,14 @@ export class TodoistMcpEcsStack extends cdk.Stack {
       allowAllOutbound: true,
     });
 
-    // Allow inbound WebSocket traffic
+    // Allow inbound traffic on port 8765 from within VPC (for API Gateway VPC Link)
+    ecsSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+      ec2.Port.tcp(8765),
+      'Allow traffic from VPC (API Gateway)'
+    );
+    
+    // Also allow from anywhere for direct access (optional, can be removed for security)
     ecsSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(8765),

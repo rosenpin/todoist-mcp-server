@@ -5,8 +5,8 @@ from pathlib import Path
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
 
-from auth_service import AuthService
-from config import SERVER_NAME
+from .auth_service import AuthService
+from .config import SERVER_NAME
 
 # Create templates directory
 templates_dir = Path(__file__).parent / "templates"

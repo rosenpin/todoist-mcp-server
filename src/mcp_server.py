@@ -8,9 +8,9 @@ from typing import Any
 from mcp.server import Server
 from mcp.types import TextContent, Tool
 
-from auth_manager import AuthManager
-from config import SERVER_NAME
-from todoist_client import TodoistClient
+from .auth_manager import AuthManager
+from .config import SERVER_NAME
+from .todoist_client import TodoistClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
