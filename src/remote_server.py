@@ -6,20 +6,18 @@ import json
 import logging
 import os
 import time
-import httpx
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+import httpx
 from mcp.server.websocket import websocket_server
-import uuid
-import asyncio
+from sse_starlette import EventSourceResponse
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket
-from sse_starlette import EventSourceResponse
 
 from .auth_handlers import AuthHandlers
 from .auth_service import AuthService
