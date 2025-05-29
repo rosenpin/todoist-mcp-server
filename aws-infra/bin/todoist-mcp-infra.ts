@@ -6,6 +6,7 @@ import { TodoistMcpEfsStack } from '../lib/efs-stack';
 import { TodoistMcpApiGatewayStack } from '../lib/api-gateway-stack';
 import { TodoistMcpEcsStack } from '../lib/ecs-stack';
 import { TodoistMcpHttpApiStack } from '../lib/http-api-stack';
+import { TodoistMcpElasticIpStack } from '../lib/elastic-ip-stack';
 
 const app = new cdk.App();
 
@@ -76,6 +77,18 @@ const ecsStack = new TodoistMcpEcsStack(app, 'TodoistMcpEcsStack', {
   }
 });
 
+// Create the Elastic IP stack for static IP
+const elasticIpStack = new TodoistMcpElasticIpStack(app, 'TodoistMcpElasticIpStack', {
+  env,
+  vpc: networkStack.vpc,
+  ecsService: ecsStack.service,
+  description: `Todoist MCP Server Elastic IP for static address (${environment})`,
+  tags: {
+    Environment: environment,
+    Project: 'TodoistMcpServer'
+  }
+});
+
 // Create the HTTP API stack for SSE support
 const httpApiStack = new TodoistMcpHttpApiStack(app, 'TodoistMcpHttpApiStack', {
   env,
@@ -95,6 +108,7 @@ apiGatewayStack.addDependency(networkStack);
 ecsStack.addDependency(networkStack);
 ecsStack.addDependency(ecrStack);
 ecsStack.addDependency(efsStack);
+elasticIpStack.addDependency(ecsStack);
 httpApiStack.addDependency(ecsStack);
 
 // Output cost-saving summary
@@ -103,5 +117,6 @@ console.log('✓ No NAT Gateway (saves ~$45/month)');
 console.log('✓ API Gateway WebSocket instead of ALB (saves ~$20/month)');
 console.log('✓ Public IP assignment for Fargate tasks');
 console.log('✓ EFS for persistent storage');
-console.log('✓ Estimated monthly cost: ~$5-10');
+console.log('✓ Elastic IP for static address (+$3.60/month)');
+console.log('✓ Estimated monthly cost: ~$9-14');
 console.log('===================================\n');

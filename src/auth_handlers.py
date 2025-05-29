@@ -229,7 +229,7 @@ AUTH_PAGE_TEMPLATE = """
 class AuthHandlers:
     """Handlers for authentication endpoints."""
 
-    def __init__(self, base_url: str = "wss://localhost:8765"):
+    def __init__(self, base_url: str = "http://localhost:8765"):
         self.auth_service = AuthService()
         self.base_url = base_url
 
@@ -258,8 +258,8 @@ class AuthHandlers:
                 todoist_token=todoist_token, user_agent=user_agent
             )
 
-            # Generate integration URL
-            integration_url = f"{self.base_url}/mcp/{integration.integration_id}"
+            # Generate integration URL for SSE endpoint
+            integration_url = f"{self.base_url}/sse/{integration.integration_id}"
 
             return JSONResponse(
                 {
