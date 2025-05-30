@@ -1,28 +1,22 @@
-FROM python:3.13.3-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install uv
-RUN pip install uv
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
 
-# Copy project files
-COPY pyproject.toml ./
-COPY README.md ./
+# Install dependencies
+RUN npm install
+
+# Copy source code
 COPY src ./src
 
-# Create virtual environment and install dependencies
-RUN uv venv && \
-    . .venv/bin/activate && \
-    uv pip install -e .
+# Build TypeScript
+RUN npm run build
 
-# Create directory for database
-RUN mkdir -p /root/.todoist-mcp
-
-# Expose port for FastMCP SSE server
+# Expose port
 EXPOSE 8765
 
-# Set the virtual environment in PATH
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Run the final FastMCP server with contextual routing
-CMD ["python", "-m", "src.final_server"]
+# Run the server
+CMD ["node", "dist/index.js"]
