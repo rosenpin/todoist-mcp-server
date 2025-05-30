@@ -1,154 +1,65 @@
-# Todoist MCP Server
+# Todoist MCP Cloudflare Worker
 
-A Model Context Protocol (MCP) server that integrates with Todoist for task management. Can be run locally or deployed as a remote integration for Claude.
+A Todoist MCP server implementation using Cloudflare Workers and the `agents` library, following the proven git-mcp pattern.
 
 ## Features
 
-- Create tasks with natural language due dates
-- List tasks with filters (today, overdue, by priority)
-- Complete tasks by name
-- Update task details
-- Delete tasks
-- Secure API token storage using TinyDB
+- ✅ **Working with Claude integrations** - Uses the proven `agents` library pattern
+- 🔧 **Three Todoist tools**: `list_projects`, `list_tasks`, `add_task`
+- 🌐 **SSE Transport** - Handles Server-Sent Events properly
+- 📝 **Demo responses** - Ready to test immediately
+- 🚀 **Cloudflare Workers** - Fast, global deployment
 
-## Installation
+## Quick Deploy
 
-### Using UV (recommended)
+1. **Get Cloudflare API Token**:
+   - Go to https://developers.cloudflare.com/fundamentals/api/get-started/create-token/
+   - Create token with "Edit Cloudflare Workers" permissions
+   - Set environment variable: `export CLOUDFLARE_API_TOKEN=your_token_here`
 
-```bash
-# Install uv if you haven't already
-pip install uv
+2. **Deploy**:
+   ```bash
+   cd /workspaces/todoist-mcp-server/cloudflare-worker
+   npm install
+   npx wrangler deploy
+   ```
 
-# Create virtual environment and install dependencies
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e .
-```
+3. **Get your URL**:
+   After deployment, you'll get a URL like: `https://todoist-mcp-server.your-username.workers.dev`
 
-### Using pip
+4. **Add to Claude integrations**:
+   Use the full HTTPS URL in Claude integrations - no additional setup needed!
 
-```bash
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+## Tools Available
 
-# Install dependencies
-pip install -e .
-```
+### `list_projects`
+Lists all Todoist projects (currently returns demo data).
 
-## Configuration
+### `list_tasks` 
+Lists tasks from a specific project or all tasks.
+- Optional parameter: `project_name`
 
-1. Create a `.env` file with your OAuth credentials (for future web auth):
-
-```env
-CLIENT_ID=your_client_id
-CLIENT_SECRET=your_client_secret
-VERIFICATION_TOKEN=your_verification_token
-```
-
-1. On first run, you'll be prompted to enter your Todoist API token. Get it from:
-   <https://todoist.com/prefs/integrations>
-
-The token will be securely stored in `~/.todoist-mcp/db.json`.
-
-## Usage
-
-### Option 1: Local MCP Server
-
-Run locally for use with Claude Desktop:
-
-```bash
-python -m src
-```
-
-### Option 2: Remote MCP Integration
-
-Deploy as a remote server for Claude to access over the internet:
-
-```bash
-python -m src.remote_server
-```
-
-See [REMOTE_INTEGRATION.md](REMOTE_INTEGRATION.md) for detailed deployment instructions.
-
-### Using with Claude Desktop (Local)
-
-Add to your Claude configuration file:
-
-```json
-{
-  "mcpServers": {
-    "todoist": {
-      "command": "python",
-      "args": ["-m", "src"],
-      "cwd": "/path/to/todoist-mcp-server"
-    }
-  }
-}
-```
-
-### Using Docker
-
-```bash
-# Build the image
-docker build -t todoist-mcp .
-
-# Run the container
-docker run -it todoist-mcp
-```
+### `add_task`
+Adds a new task to Todoist.
+- Required: `content` (task description)
+- Optional: `project_name`, `due_date`
 
 ## Development
 
-### Code formatting and linting
-
 ```bash
-# Format code
-ruff format src
+# Start local development server
+npm run dev
 
-# Lint code
-ruff check src --fix
-
-# Type checking
-mypy src
+# View logs
+npm run tail
 ```
 
-## Available Tools
+## Why This Works
 
-### create_task
+This implementation follows the exact pattern used by git-mcp:
+- Uses the `agents` library with `McpAgent` class
+- Handles SSE transport automatically
+- Proper request routing and protocol detection
+- CORS headers for browser compatibility
 
-Create a new task in Todoist
-
-- `content` (required): Task title
-- `description`: Task description
-- `due_string`: Natural language due date
-- `priority`: 1-4 (1=normal, 4=urgent)
-
-### list_tasks
-
-List tasks with optional filters
-
-- `filter`: "today" or "overdue"
-- `priority`: Filter by priority (1-4)
-- `limit`: Maximum tasks to return
-
-### complete_task
-
-Mark a task as complete
-
-- `task_name` (required): Name of task to complete
-
-### update_task
-
-Update an existing task
-
-- `task_name` (required): Name of task to update
-- `content`: New task title
-- `description`: New description
-- `due_string`: New due date
-- `priority`: New priority
-
-### delete_task
-
-Delete a task
-
-- `task_name` (required): Name of task to delete
+Unlike the previous WebSocket attempts, this uses the proven SSE pattern that Claude integrations expect.

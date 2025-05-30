@@ -1,0 +1,61 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/node
+{
+    "name": "Node.js & TypeScript",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node",
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers-extra/features/curl-apt-get:1": {},
+        "ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {},
+        "ghcr.io/joedmck/devcontainer-features/wrangler:1": {}
+    },
+    "mounts": [
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly"
+    ],
+    "postStartCommand": "sudo apt-get update && npm install -g typescript eslint @anthropic-ai/claude-code",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "typescript.tsdk": "node_modules/typescript/lib",
+                "eslint.enable": true,
+                "[typescript]": {
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": true,
+                        "source.fixAll": true
+                    }
+                },
+                "[javascript]": {
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": true,
+                        "source.fixAll": true
+                    }
+                }
+            },
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "ms-vscode.vscode-typescript-next",
+                "ms-vscode.vscode-typescript-tslint-plugin",
+                "ms-azuretools.vscode-docker",
+                "github.vscode-github-actions",
+                "tamasfe.even-better-toml",
+                "redhat.vscode-yaml"
+            ]
+        }
+    }
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+    // Use 'postCreateCommand' to run commands after the container is created.
+    // "postCreateCommand": "npm install",
+    // Configure tool-specific properties.
+    // "customizations": {},
+    // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+    // "remoteUser": "root"
+}
