@@ -2,15 +2,14 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/node
 {
     "name": "Node.js & TypeScript",
-    "image": "mcr.microsoft.com/devcontainers/node:20-bullseye",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node",
     "features": {
         "ghcr.io/devcontainers/features/node:1": {},
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
-        "ghcr.io/devcontainers/features/aws-cli:1": {},
-        "ghcr.io/devcontainers-extra/features/aws-cdk:2": {},
         "ghcr.io/devcontainers-extra/features/curl-apt-get:1": {},
-        "ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {}
+        "ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {},
+        "ghcr.io/joedmck/devcontainer-features/wrangler:1": {}
     },
     "mounts": [
         "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
