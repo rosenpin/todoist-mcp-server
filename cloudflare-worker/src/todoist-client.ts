@@ -125,20 +125,42 @@ export class TodoistClient {
   }
 
   async createTask(task: {
-    content: string;
-    projectId?: string;
-    description?: string;
-    labels?: string[];
-    priority?: number;
-    dueString?: string;
+    content: string; // required, non-empty
+    description?: string | null;
+    projectId?: string | number | null;
+    sectionId?: string | number | null;
+    parentId?: string | number | null;
+    order?: number | null;
+    labels?: string[] | null;
+    priority?: number | null;
+    assigneeId?: number | null;
+    dueString?: string | null;
+    dueDate?: string | null;
+    dueDatetime?: string | null;
+    dueLang?: string | null;
+    duration?: number | null;
+    durationUnit?: string | null;
+    deadlineDate?: string | null;
+    deadlineLang?: string | null;
   }): Promise<TodoistTask> {
     const body = {
       content: task.content,
-      project_id: task.projectId,
       description: task.description,
+      project_id: task.projectId,
+      section_id: task.sectionId,
+      parent_id: task.parentId,
+      order: task.order,
       labels: task.labels,
-      priority: task.priority || 1,
-      due_string: task.dueString
+      priority: task.priority,
+      assignee_id: task.assigneeId,
+      due_string: task.dueString,
+      due_date: task.dueDate,
+      due_datetime: task.dueDatetime,
+      due_lang: task.dueLang,
+      duration: task.duration,
+      duration_unit: task.durationUnit,
+      deadline_date: task.deadlineDate,
+      deadline_lang: task.deadlineLang,
     };
 
     // Remove undefined values
