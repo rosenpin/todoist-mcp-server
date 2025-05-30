@@ -1,7 +1,7 @@
 import { TodoistTask, TodoistProject } from './types.js';
 
 export class TodoistClient {
-  private baseURL = 'https://api.todoist.com/rest/v2';
+  private baseURL = 'https://api.todoist.com/api/v1';
   private apiToken: string;
 
   constructor(apiToken: string) {
@@ -23,24 +23,105 @@ export class TodoistClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Todoist API error (${response.status}): ${errorText}`);
+      let errorMessage = `Todoist API error (${response.status}): ${errorText}`;
+
+      // Try to parse JSON error response if available
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error) {
+          errorMessage = `Todoist API error (${response.status}): ${errorJson.error}`;
+        }
+      } catch {
+        // Keep original error message if not JSON
+      }
+
+      throw new Error(errorMessage);
     }
 
     return response.json() as T;
   }
 
   async getProjects(): Promise<TodoistProject[]> {
-    return this.makeRequest<TodoistProject[]>('/projects');
+    // The v1 API returns paginated results
+    interface ProjectsResponse {
+      results: TodoistProject[];
+      next_cursor: string | null;
+    }
+
+    const allProjects: TodoistProject[] = [];
+    let cursor: string | null = null;
+
+    // Fetch all pages
+    do {
+      const params = new URLSearchParams();
+      if (cursor) {
+        params.append('cursor', cursor);
+      }
+      params.append('limit', '200'); // Max limit per API docs
+
+      const endpoint = `/projects?${params.toString()}`;
+      const response = await this.makeRequest<ProjectsResponse>(endpoint);
+
+      allProjects.push(...response.results);
+      cursor = response.next_cursor;
+    } while (cursor);
+
+    return allProjects;
   }
 
   async getTasks(filter?: string): Promise<TodoistTask[]> {
-    const params = new URLSearchParams();
     if (filter) {
-      params.append('filter', filter);
+      // Use the new filter endpoint for filtered queries
+      interface FilteredTasksResponse {
+        results: TodoistTask[];
+        next_cursor: string | null;
+      }
+
+      const allTasks: TodoistTask[] = [];
+      let cursor: string | null = null;
+
+      do {
+        const params = new URLSearchParams();
+        params.append('query', filter);
+        if (cursor) {
+          params.append('cursor', cursor);
+        }
+        params.append('limit', '200');
+
+        const endpoint = `/tasks/filter?${params.toString()}`;
+        const response = await this.makeRequest<FilteredTasksResponse>(endpoint);
+
+        allTasks.push(...response.results);
+        cursor = response.next_cursor;
+      } while (cursor);
+
+      return allTasks;
+    } else {
+      // Regular tasks endpoint for all tasks
+      interface TasksResponse {
+        results: TodoistTask[];
+        next_cursor: string | null;
+      }
+
+      const allTasks: TodoistTask[] = [];
+      let cursor: string | null = null;
+
+      do {
+        const params = new URLSearchParams();
+        if (cursor) {
+          params.append('cursor', cursor);
+        }
+        params.append('limit', '200');
+
+        const endpoint = `/tasks?${params.toString()}`;
+        const response = await this.makeRequest<TasksResponse>(endpoint);
+
+        allTasks.push(...response.results);
+        cursor = response.next_cursor;
+      } while (cursor);
+
+      return allTasks;
     }
-    
-    const endpoint = params.toString() ? `/tasks?${params.toString()}` : '/tasks';
-    return this.makeRequest<TodoistTask[]>(endpoint);
   }
 
   async createTask(task: {
@@ -60,9 +141,14 @@ export class TodoistClient {
       due_string: task.dueString
     };
 
+    // Remove undefined values
+    const cleanBody = Object.fromEntries(
+      Object.entries(body).filter(([_, value]) => value !== undefined)
+    );
+
     return this.makeRequest<TodoistTask>('/tasks', {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify(cleanBody),
     });
   }
 

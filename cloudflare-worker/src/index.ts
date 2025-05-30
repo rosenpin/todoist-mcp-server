@@ -13,20 +13,20 @@ export class TodoistMCP extends McpAgent {
   async init() {
     // Initialize storage if available
     await this.initializeStorage();
-    
+
     // Extract environment and request details  
     const requestUrl = this.props.requestUrl as string;
     const url = new URL(requestUrl);
-    
-    // Extract session ID from URL (used by Claude integrations)
-    const sessionId = url.searchParams.get("sessionId") || "default";
 
-    console.log("Initializing TodoistMCP server", { requestUrl, sessionId });
+    // Extract user ID from URL (for user-specific token storage)
+    const userId = url.searchParams.get("user_id") || url.searchParams.get("sessionId") || "default";
+
+    console.log("Initializing TodoistMCP server", { requestUrl, userId });
 
     // Get user's Todoist token from storage
-    const todoistToken = await this.getUserToken(sessionId);
+    const todoistToken = await this.getUserToken(userId);
     if (!todoistToken) {
-      console.log("No Todoist token found for session:", sessionId);
+      console.log("No Todoist token found for user:", userId);
       // Register a setup tool instead of actual Todoist tools
       this.registerSetupTool();
       return;
@@ -81,7 +81,7 @@ export class TodoistMCP extends McpAgent {
             description: "Filter by project ID (optional)",
           },
           filterQuery: {
-            type: "string", 
+            type: "string",
             description: "Todoist filter query (optional)",
           },
           limit: {
@@ -97,10 +97,10 @@ export class TodoistMCP extends McpAgent {
         console.log("Executing get_tasks tool", args);
         try {
           const limit = Math.min(args.limit || 20, 100);
-          
+
           // Build filter string
           const filterParts: string[] = [];
-          
+
           if (args.projectId) {
             const projects = await todoistClient.getProjects();
             const project = projects.find(p => p.id === args.projectId);
@@ -108,14 +108,14 @@ export class TodoistMCP extends McpAgent {
               filterParts.push(`#${project.name}`);
             }
           }
-          
+
           if (args.filterQuery) {
             filterParts.push(args.filterQuery);
           }
 
           const filter = filterParts.length > 0 ? filterParts.join(' & ') : undefined;
           let tasks = await todoistClient.getTasks(filter);
-          
+
           // Apply limit
           tasks = tasks.slice(0, limit);
 
@@ -130,7 +130,7 @@ export class TodoistMCP extends McpAgent {
             };
           }
 
-          const tasksText = tasks.map(task => 
+          const tasksText = tasks.map(task =>
             `• **${task.content}** (${task.id})\n  Priority: ${task.priority}${task.dueString ? `\n  Due: ${task.dueString}` : ''}${task.description ? `\n  Description: ${task.description}` : ''}`
           ).join('\n\n');
 
@@ -161,39 +161,14 @@ export class TodoistMCP extends McpAgent {
       "create_task",
       "Create a new task in Todoist",
       {
-        type: "object",
-        properties: {
-          content: {
-            type: "string",
-            description: "Task content/title",
-          },
-          projectId: {
-            type: "string",
-            description: "Project ID (optional)",
-          },
-          description: {
-            type: "string",
-            description: "Task description (optional)",
-          },
-          labels: {
-            type: "array",
-            items: { type: "string" },
-            description: "List of label names (optional)",
-          },
-          priority: {
-            type: "number",
-            description: "Priority (1-4, default: 1)",
-            minimum: 1,
-            maximum: 4,
-          },
-          dueString: {
-            type: "string",
-            description: "Due date in natural language (e.g., 'tomorrow', 'next week')",
-          },
-        },
-        required: ["content"],
+        content: z.string().describe("Task content/title"),
+        projectId: z.string().optional().describe("Project ID (optional)"),
+        description: z.string().optional().describe("Task description (optional)"),
+        labels: z.array(z.string()).optional().describe("List of label names (optional)"),
+        priority: z.number().optional().default(1).describe("Priority (1-4, default: 1)"),
+        dueString: z.string().optional().describe("Due date in natural language (e.g., 'tomorrow', 'next week')"),
       },
-      async (args: any) => {
+      async (args, extra) => {
         console.log("Executing create_task tool", args);
         try {
           const task = await todoistClient.createTask({
@@ -385,18 +360,17 @@ export class TodoistMCP extends McpAgent {
   // Initialize storage if available
   private async initializeStorage(): Promise<void> {
     try {
-      const env = this.props?.env;
-      if (env?.DB) {
-        // Create kvstore table if it doesn't exist
-        await env.DB.prepare(`
+      if (this.sql) {
+        // Create kvstore table if it doesn't exist using agents library SQL
+        this.sql`
           CREATE TABLE IF NOT EXISTS kvstore (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
           )
-        `).run();
-        console.log("D1 storage initialized successfully");
+        `;
+        console.log("Agents SQL storage initialized successfully");
       } else {
-        console.log("D1 storage not available");
+        console.log("Agents SQL storage not available");
       }
     } catch (error) {
       console.error("Error initializing storage:", error);
@@ -404,24 +378,45 @@ export class TodoistMCP extends McpAgent {
   }
 
   // Helper method to get user's Todoist token from storage
-  private async getUserToken(sessionId: string): Promise<string | null> {
+  private async getUserToken(userId: string): Promise<string | null> {
     try {
-      const env = this.props?.env;
-      if (!env?.DB) {
-        console.error("D1 storage not available - cannot retrieve user token");
-        return null;
+      // First try agents SQL storage
+      if (this.sql) {
+        try {
+          const result = this.sql<{ value: string }>`
+            SELECT value FROM kvstore WHERE key = ${`todoist_token_${userId}`}
+          `;
+
+          if (result.length > 0) {
+            console.log("Found stored token in agents SQL for user:", userId);
+            return result[0].value;
+          }
+        } catch (sqlError) {
+          console.log("Agents SQL not available, trying D1 lookup");
+        }
       }
-      
-      const result = await env.DB.prepare(
-        "SELECT value FROM kvstore WHERE key = ?"
-      ).bind(`todoist_token_${sessionId}`).first();
-      
-      if (result) {
-        console.log("Found stored token for session:", sessionId);
-        return result.value as string;
+
+      // Fallback to D1 via internal API
+      try {
+        const baseUrl = new URL(this.props.requestUrl as string);
+        const response = await fetch(`${baseUrl.origin}/internal/get-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
+            console.log("Found stored token in D1 for user:", userId);
+            return data.token;
+          }
+        }
+      } catch (fetchError) {
+        console.error("Error fetching token from D1:", fetchError);
       }
-      
-      console.log("No token found for session:", sessionId);
+
+      console.log("No token found for user:", userId);
       return null;
     } catch (error) {
       console.error("Error getting user token:", error);
@@ -430,19 +425,38 @@ export class TodoistMCP extends McpAgent {
   }
 
   // Helper method to store user's Todoist token
-  private async setUserToken(sessionId: string, token: string): Promise<void> {
+  private async setUserToken(userId: string, token: string): Promise<void> {
     try {
-      const env = this.props?.env;
-      if (!env?.DB) {
-        console.error("D1 storage not available - cannot store user token");
-        throw new Error("Storage not available - please try again later");
+      // Try to store in agents SQL storage first
+      if (this.sql) {
+        try {
+          this.sql`
+            INSERT OR REPLACE INTO kvstore (key, value) VALUES (${`todoist_token_${userId}`}, ${token})
+          `;
+          console.log("Stored Todoist token in agents SQL for user:", userId);
+        } catch (sqlError) {
+          console.log("Agents SQL storage failed, will try D1");
+        }
       }
-      
-      await env.DB.prepare(
-        "INSERT OR REPLACE INTO kvstore (key, value) VALUES (?, ?)"
-      ).bind(`todoist_token_${sessionId}`, token).run();
-      
-      console.log("Stored Todoist token for session:", sessionId);
+
+      // Also store in D1 via internal API for persistence
+      try {
+        const baseUrl = new URL(this.props.requestUrl as string);
+        const response = await fetch(`${baseUrl.origin}/internal/set-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, token })
+        });
+
+        if (response.ok) {
+          console.log("Stored Todoist token in D1 for user:", userId);
+        } else {
+          console.error("Failed to store token in D1");
+        }
+      } catch (fetchError) {
+        console.error("Error storing token in D1:", fetchError);
+      }
+
     } catch (error) {
       console.error("Error storing user token:", error);
       throw error;
@@ -455,39 +469,38 @@ export class TodoistMCP extends McpAgent {
       "setup_todoist",
       "Configure your Todoist API token to enable task management",
       {
-        type: "object",
-        properties: {
-          todoist_token: {
-            type: "string",
-            description: "Your Todoist API token (get it from https://todoist.com/prefs/integrations)",
-          },
-        },
-        required: ["todoist_token"],
+        token: z.string().describe("Your Todoist API token (get it from https://todoist.com/prefs/integrations)"),
       },
-      async (args: any) => {
+      async (args, extra) => {
         console.log("Executing setup_todoist tool");
+        console.log("Token received (first 10 chars):", args.token?.substring(0, 10));
+        console.log("Token length:", args.token?.length);
+
         try {
-          const sessionId = new URL(this.props.requestUrl as string).searchParams.get("sessionId") || "default";
-          
+          const url = new URL(this.props.requestUrl as string);
+          const userId = url.searchParams.get("user_id") || url.searchParams.get("sessionId") || "default";
+
           // Validate token by making a test API call
-          const testClient = new TodoistClient(args.todoist_token);
+          const testClient = new TodoistClient(args.token);
+          console.log("Testing API call with token...");
           await testClient.getProjects(); // This will throw if token is invalid
-          
+          console.log("API call successful!");
+
           // Store the token
-          await this.setUserToken(sessionId, args.todoist_token);
-          
+          await this.setUserToken(userId, args.token);
+
           return {
             content: [
               {
                 type: "text",
-                text: `✅ **Todoist API token configured successfully!**\n\n🔄 **Please refresh Claude integrations** (remove and re-add this server) to enable all Todoist tools.\n\n📋 Available tools after refresh:\n• list_projects\n• get_tasks  \n• create_task\n• update_task\n• complete_task\n• uncomplete_task`,
+                text: `✅ **Todoist API token configured successfully!**\n\n💡 **For better user management**, consider using the web setup at: ${new URL(this.props.requestUrl as string).origin}\n\n🔄 **Please refresh Claude integrations** (remove and re-add this server) to enable all Todoist tools.\n\n📋 Available tools after refresh:\n• list_projects\n• get_tasks  \n• create_task\n• update_task\n• complete_task\n• uncomplete_task`,
               },
             ],
           };
         } catch (error) {
           console.error("Error setting up Todoist token:", error);
           const errorMessage = error instanceof Error ? error.message : String(error);
-          
+
           if (errorMessage.includes("Storage not available")) {
             return {
               content: [
@@ -498,7 +511,7 @@ export class TodoistMCP extends McpAgent {
               ],
             };
           }
-          
+
           return {
             content: [
               {
@@ -519,7 +532,7 @@ export class TodoistMCP extends McpAgent {
 export default {
   async fetch(request: Request, env: any, ctx: any): Promise<Response> {
     const url = new URL(request.url);
-    
+
     console.log("Incoming request:", {
       method: request.method,
       pathname: url.pathname,
@@ -553,6 +566,82 @@ export default {
       });
     }
 
+    // Token lookup endpoint for internal use by Durable Objects
+    if (url.pathname === "/internal/get-token" && request.method === "POST") {
+      try {
+        const { userId } = await request.json();
+        const db = env.DB;
+
+        if (!db) {
+          return new Response(JSON.stringify({ error: "Database not available" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        // Ensure table exists
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS kvstore (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          )
+        `).run();
+
+        const result = await db.prepare(
+          "SELECT value FROM kvstore WHERE key = ?"
+        ).bind(`todoist_token_${userId}`).first();
+
+        return new Response(JSON.stringify({
+          token: result?.value || null
+        }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch (error) {
+        console.error("Error getting token:", error);
+        return new Response(JSON.stringify({ error: "Internal error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    // Token storage endpoint for internal use by Durable Objects
+    if (url.pathname === "/internal/set-token" && request.method === "POST") {
+      try {
+        const { userId, token } = await request.json();
+        const db = env.DB;
+
+        if (!db) {
+          return new Response(JSON.stringify({ error: "Database not available" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        // Ensure table exists
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS kvstore (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          )
+        `).run();
+
+        await db.prepare(
+          "INSERT OR REPLACE INTO kvstore (key, value) VALUES (?, ?)"
+        ).bind(`todoist_token_${userId}`, token).run();
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch (error) {
+        console.error("Error storing token:", error);
+        return new Response(JSON.stringify({ error: "Internal error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+
     // OAuth discovery endpoint
     if (url.pathname === "/.well-known/oauth-authorization-server") {
       return new Response(JSON.stringify({
@@ -569,6 +658,81 @@ export default {
       });
     }
 
+    // Setup endpoint - handle token submission
+    if (url.pathname === "/setup" && request.method === "POST") {
+      try {
+        const formData = await request.formData();
+        const token = formData.get("token") as string;
+
+        if (!token) {
+          throw new Error("No token provided");
+        }
+
+        // Validate token by testing API call
+        const testResponse = await fetch('https://api.todoist.com/rest/v2/projects', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!testResponse.ok) {
+          throw new Error("Invalid Todoist API token");
+        }
+
+        // Generate unique user ID
+        const userId = crypto.randomUUID();
+
+        // Store token in D1/agents storage (we'll need to access the global storage here)
+        // For now, we'll handle this when the MCP server initializes with this user_id
+
+        // Store in D1 database
+        const db = env.DB;
+        if (db) {
+          // Create table if it doesn't exist
+          await db.prepare(`
+            CREATE TABLE IF NOT EXISTS kvstore (
+              key TEXT PRIMARY KEY,
+              value TEXT NOT NULL
+            )
+          `).run();
+
+          // Store the token
+          await db.prepare(
+            "INSERT OR REPLACE INTO kvstore (key, value) VALUES (?, ?)"
+          ).bind(`todoist_token_${userId}`, token).run();
+
+          console.log(`Stored token for user ${userId} in D1`);
+        }
+
+        // Redirect to success page
+        return new Response(null, {
+          status: 302,
+          headers: {
+            "Location": `/?user_id=${userId}`,
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Setup failed";
+        return new Response(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Setup Error</title></head>
+          <body>
+            <h1>❌ Setup Error</h1>
+            <p><strong>Error:</strong> ${errorMessage}</p>
+            <p><a href="/">← Try again</a></p>
+          </body>
+          </html>
+        `, {
+          status: 400,
+          headers: {
+            "Content-Type": "text/html",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+    }
+
     // Registration endpoint
     if (url.pathname === "/register" && request.method === "POST") {
       return new Response(JSON.stringify({
@@ -583,37 +747,78 @@ export default {
       });
     }
 
-    // Root endpoint - info page (for non-SSE requests)
+    // Root endpoint - auth page for token setup (for non-SSE requests)
     if (url.pathname === "/" && !request.headers.get("accept")?.includes("text/event-stream")) {
+      const userId = url.searchParams.get("user_id");
+
+      if (userId) {
+        // Show success page with integration URL
+        return new Response(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Todoist MCP Server - Ready!</title></head>
+          <body>
+            <h1>✅ Your Todoist MCP Server is Ready!</h1>
+            <p>Your personal integration URL:</p>
+            <input type="text" value="${url.origin}/?user_id=${userId}" readonly style="width: 100%; padding: 10px; font-family: monospace; background: #f0f0f0;">
+            
+            <h2>🔧 Setup Instructions:</h2>
+            <ol>
+              <li><strong>Copy the URL above</strong></li>
+              <li>Go to Claude integrations</li>
+              <li>Add the copied URL as a new MCP server</li>
+              <li>Start using Todoist tools in Claude!</li>
+            </ol>
+
+            <h2>📋 Available Tools:</h2>
+            <ul>
+              <li><strong>list_projects</strong> - List all Todoist projects</li>
+              <li><strong>get_tasks</strong> - Get tasks with optional filtering</li>
+              <li><strong>create_task</strong> - Create new tasks in Todoist</li>
+              <li><strong>update_task</strong> - Update existing tasks</li>
+              <li><strong>complete_task</strong> - Mark tasks as completed</li>
+              <li><strong>uncomplete_task</strong> - Mark completed tasks as active</li>
+            </ul>
+
+            <p><a href="/">← Set up another token</a></p>
+          </body>
+          </html>
+        `, {
+          headers: {
+            "Content-Type": "text/html",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+
+      // Show auth form
       return new Response(`
         <!DOCTYPE html>
         <html>
-        <head><title>Todoist MCP Server</title></head>
+        <head><title>Todoist MCP Server - Setup</title></head>
         <body>
-          <h1>🚀 Todoist MCP Server</h1>
-          <p>This server provides Todoist integration for Claude via MCP.</p>
-          <p><strong>Server URL:</strong> <code>${url.origin}</code></p>
-          <p><strong>Health Check:</strong> <a href="/health">/health</a></p>
-          <p><strong>Transport:</strong> SSE (Server-Sent Events)</p>
+          <h1>🚀 Todoist MCP Server Setup</h1>
+          <p>Configure your Todoist API token to get a personalized integration URL for Claude.</p>
           
-          <h2>🔧 Setup Instructions:</h2>
-          <ol>
-            <li>Add this server URL to Claude integrations</li>
-            <li>Use the <strong>setup_todoist</strong> tool to configure your API token</li>
-            <li>Get your token from: <a href="https://todoist.com/prefs/integrations" target="_blank">Todoist Settings → Integrations</a></li>
-            <li>Refresh Claude integrations to access all tools</li>
-          </ol>
-
-          <h2>📋 Available Tools (after setup):</h2>
-          <ul>
-            <li><strong>setup_todoist</strong> - Configure your Todoist API token</li>
-            <li><strong>list_projects</strong> - List all Todoist projects</li>
-            <li><strong>get_tasks</strong> - Get tasks with optional filtering</li>
-            <li><strong>create_task</strong> - Create new tasks in Todoist</li>
-            <li><strong>update_task</strong> - Update existing tasks</li>
-            <li><strong>complete_task</strong> - Mark tasks as completed</li>
-            <li><strong>uncomplete_task</strong> - Mark completed tasks as active</li>
-          </ul>
+          <form action="/setup" method="POST" style="max-width: 500px;">
+            <h2>📋 Setup Your Token:</h2>
+            <ol>
+              <li>Go to <a href="https://todoist.com/prefs/integrations" target="_blank">Todoist Settings → Integrations</a></li>
+              <li>Copy your API token</li>
+              <li>Paste it below:</li>
+            </ol>
+            
+            <label for="token"><strong>Todoist API Token:</strong></label><br>
+            <input type="text" id="token" name="token" required 
+                   style="width: 100%; padding: 10px; margin: 10px 0; font-family: monospace;"
+                   placeholder="Enter your Todoist API token..."><br>
+            
+            <button type="submit" style="padding: 10px 20px; background: #e44332; color: white; border: none; cursor: pointer;">
+              Create Integration URL
+            </button>
+          </form>
+          
+          <p><strong>Privacy:</strong> Your token is stored securely and only used to access your Todoist data.</p>
         </body>
         </html>
       `, {
@@ -625,42 +830,29 @@ export default {
     }
 
     // SSE detection - Claude sends SSE requests to root path "/"
-    const isStreamMethod = 
+    const isStreamMethod =
       request.headers.get("accept")?.includes("text/event-stream");
-      
+
     // Message detection
-    const isMessage = 
+    const isMessage =
       request.method === "POST" &&
       url.pathname.includes("/message") &&
       url.pathname !== "/message";
 
     console.log("Request analysis:", { isStreamMethod, isMessage });
 
-    // Set request URL and environment in context for agents library
+    // Set request URL in context for agents library
     ctx.props = ctx.props || {};
     ctx.props.requestUrl = request.url;
-    ctx.props.env = env;
 
-    if (isMessage) {
-      console.log("Handling POST message request via SSE");
+    // Handle MCP connections - let agents library handle all MCP traffic
+    if (isStreamMethod || isMessage) {
+      console.log("Handling MCP request via agents library");
       return await TodoistMCP.serveSSE("/*").fetch(request, env, ctx);
     }
 
-    if (isStreamMethod) {
-      const isSse = request.method === "GET";
-      console.log("Handling stream request", { isSse });
-      
-      if (isSse) {
-        console.log("Serving SSE connection");
-        return await TodoistMCP.serveSSE("/*").fetch(request, env, ctx);
-      } else {
-        console.log("Serving regular MCP connection");
-        return await TodoistMCP.serve("/*").fetch(request, env, ctx);
-      }
-    }
-
     // Default response for other paths
-    return new Response("Not Found", { 
+    return new Response("Not Found", {
       status: 404,
       headers: {
         "Access-Control-Allow-Origin": "*",
