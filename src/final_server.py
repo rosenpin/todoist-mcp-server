@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FastMCP SSE server with proper integration routing."""
+"""Final working MCP server with single endpoint and context-based routing."""
 
 import asyncio
 import logging
@@ -9,6 +9,7 @@ from typing import Optional
 import httpx
 import uvicorn
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_http_request
 from pydantic import Field
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
@@ -25,11 +26,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class TodoistMCPManager:
-    """Manager for creating per-integration MCP servers."""
+class ContextualMCPServer:
+    """Single MCP server that determines integration from request context."""
 
     def __init__(self):
         self.auth_service = AuthService()
+        self.mcp = self.create_mcp_server()
 
     async def get_public_ip(self) -> str:
         """Get public IP address."""
@@ -53,16 +55,63 @@ class TodoistMCPManager:
 
         return "localhost"
 
-    def create_mcp_server_for_integration(
-        self, integration_id: str, todoist_token: str
-    ) -> FastMCP:
-        """Create FastMCP server for a specific integration."""
-        mcp = FastMCP(f"{SERVER_NAME}-{integration_id[:8]}")
-        todoist_client = TodoistClient(todoist_token)
+    def get_integration_from_request(self) -> str:
+        """Extract integration ID from current HTTP request context."""
+        try:
+            request = get_http_request()
+
+            # Log the request details for debugging
+            logger.info(f"Request URL: {request.url}")
+            logger.info(f"Query params: {dict(request.query_params)}")
+
+            # Try to get integration ID from query parameters
+            integration_id = request.query_params.get("integration_id")
+            if integration_id:
+                logger.info(f"Found integration_id in query params: {integration_id}")
+                return integration_id
+
+            # Try to get from X-Integration-Id header
+            integration_id = request.headers.get("X-Integration-Id")
+            if integration_id:
+                logger.info(f"Found integration_id in headers: {integration_id}")
+                return integration_id
+
+            # Try to get from path if it follows pattern /{integration_id}/mcp
+            path_parts = request.url.path.strip("/").split("/")
+            if len(path_parts) >= 2 and path_parts[1] == "mcp":
+                logger.info(f"Found integration_id in path: {path_parts[0]}")
+                return path_parts[0]
+
+            # Default fallback - this will cause tools to fail with helpful error
+            logger.warning("No integration_id found in request")
+            return ""
+
+        except Exception as e:
+            logger.error(f"Failed to get integration from request: {e}", exc_info=True)
+            return ""
+
+    def get_todoist_client(self) -> TodoistClient:
+        """Get Todoist client for current request context."""
+        integration_id = self.get_integration_from_request()
+        if not integration_id:
+            raise Exception(
+                "No integration ID found in request. Use ?integration_id=YOUR_ID or X-Integration-Id header"
+            )
+
+        integration = self.auth_service.get_integration(integration_id)
+        if not integration:
+            raise Exception(f"Integration '{integration_id}' not found")
+
+        return TodoistClient(integration.todoist_token)
+
+    def create_mcp_server(self) -> FastMCP:
+        """Create the main MCP server with context-aware tools."""
+        mcp = FastMCP(SERVER_NAME)
 
         @mcp.tool()
         def list_projects():
             """Get all Todoist projects."""
+            todoist_client = self.get_todoist_client()
             return todoist_client.get_projects()
 
         @mcp.tool()
@@ -74,6 +123,8 @@ class TodoistMCPManager:
             limit: int = Field(50, description="Maximum number of tasks", ge=1, le=100),
         ):
             """Get tasks from Todoist with optional filtering."""
+            todoist_client = self.get_todoist_client()
+
             filter_parts = []
             if project_id:
                 project = next(
@@ -103,6 +154,7 @@ class TodoistMCPManager:
             ),
         ):
             """Create a new task in Todoist."""
+            todoist_client = self.get_todoist_client()
             return todoist_client.create_task(
                 content=content,
                 project_id=project_id,
@@ -128,6 +180,7 @@ class TodoistMCPManager:
             due_string: Optional[str] = Field(None, description="New due date"),
         ):
             """Update an existing task."""
+            todoist_client = self.get_todoist_client()
             success = todoist_client.update_task(
                 task_id=task_id,
                 content=content,
@@ -148,6 +201,7 @@ class TodoistMCPManager:
             task_id: str = Field(..., description="ID of the task to complete"),
         ):
             """Mark a task as completed."""
+            todoist_client = self.get_todoist_client()
             success = todoist_client.complete_task(task_id)
             if success:
                 return {"message": f"Task {task_id} marked as completed"}
@@ -159,6 +213,7 @@ class TodoistMCPManager:
             task_id: str = Field(..., description="ID of the task to uncomplete"),
         ):
             """Mark a completed task as active again."""
+            todoist_client = self.get_todoist_client()
             success = todoist_client.uncomplete_task(task_id)
             if success:
                 return {"message": f"Task {task_id} marked as active"}
@@ -168,16 +223,16 @@ class TodoistMCPManager:
         return mcp
 
     async def get_integration_url(self, integration_id: str) -> str:
-        """Get SSE URL for integration."""
+        """Get MCP SSE URL for integration."""
         public_ip = await self.get_public_ip()
-        return f"http://{public_ip}:8765/{integration_id}/sse"
+        return f"http://{public_ip}:8765/mcp/sse?integration_id={integration_id}"
 
 
-# Global manager
-mcp_manager = TodoistMCPManager()
+# Global server
+contextual_server = ContextualMCPServer()
 
 
-# HTTP routes for auth and management
+# HTTP routes
 async def home(request: Request) -> RedirectResponse:
     return RedirectResponse(url="/auth")
 
@@ -204,12 +259,12 @@ async def create_integration_handler(request: Request) -> JSONResponse:
             )
 
         # Create integration
-        integration = mcp_manager.auth_service.create_integration(
+        integration = contextual_server.auth_service.create_integration(
             todoist_token=todoist_token, user_agent=request.headers.get("user-agent")
         )
 
         # Get integration URL
-        integration_url = await mcp_manager.get_integration_url(
+        integration_url = await contextual_server.get_integration_url(
             integration.integration_id
         )
 
@@ -229,28 +284,28 @@ async def create_integration_handler(request: Request) -> JSONResponse:
         )
 
 
-# Create mount function for each integration
-def create_integration_mount(integration_id: str, todoist_token: str):
-    """Create a FastMCP app mounted at /{integration_id}/."""
-    mcp_server = mcp_manager.create_mcp_server_for_integration(
-        integration_id, todoist_token
-    )
-    return mcp_server.http_app(transport="sse", path="/sse")
-
-
-# Main HTTP app for auth/management
-async def setup_auth_app():
-    """Setup the auth HTTP app."""
-    public_ip = await mcp_manager.get_public_ip()
+async def setup_app():
+    """Setup the main application."""
+    public_ip = await contextual_server.get_public_ip()
     base_url = os.getenv("BASE_URL", f"http://{public_ip}:8765")
 
+    # Create auth routes
+    auth_routes = [
+        Route("/", home, methods=["GET"]),
+        Route("/health", health_check, methods=["GET"]),
+        Route("/auth", auth_page_handler, methods=["GET"]),
+        Route("/auth/create", create_integration_handler, methods=["POST"]),
+    ]
+
+    # Create the single MCP app with SSE transport
+    mcp_app = contextual_server.mcp.http_app(transport="sse")
+
+    # Combine all routes
     app = Starlette(
         routes=[
-            Route("/", home, methods=["GET"]),
-            Route("/health", health_check, methods=["GET"]),
-            Route("/auth", auth_page_handler, methods=["GET"]),
-            Route("/auth/create", create_integration_handler, methods=["POST"]),
-        ],
+            *auth_routes,
+            Mount("/mcp", app=mcp_app),
+        ]
     )
 
     app.add_middleware(
@@ -267,40 +322,12 @@ async def setup_auth_app():
     return app
 
 
-# Combined app with integration mounts
-async def setup_combined_app():
-    """Setup combined app with dynamic integration mounting."""
-    auth_app = await setup_auth_app()
-
-    # Get all existing integrations and mount them
-    integrations = mcp_manager.auth_service.get_all_integrations()
-
-    routes = auth_app.routes.copy()
-
-    for integration in integrations:
-        integration_app = create_integration_mount(
-            integration.integration_id, integration.todoist_token
-        )
-        mount = Mount(f"/{integration.integration_id}", app=integration_app)
-        routes.append(mount)
-        logger.info(f"Mounted FastMCP for integration {integration.integration_id[:8]}")
-
-    # Create new app with all routes
-    combined_app = Starlette(routes=routes)
-
-    # Copy middleware and state
-    combined_app.middleware_stack = auth_app.middleware_stack
-    combined_app.state = auth_app.state
-
-    return combined_app
-
-
 async def main():
     """Main entry point."""
-    logger.info(f"Starting {SERVER_NAME} v{SERVER_VERSION} with FastMCP SSE support")
+    logger.info(f"Starting {SERVER_NAME} v{SERVER_VERSION} with contextual routing")
 
-    # Setup combined app with existing integrations
-    app = await setup_combined_app()
+    # Setup app
+    app = await setup_app()
 
     # Run server
     config = uvicorn.Config(app, host="0.0.0.0", port=8765, log_level="info")

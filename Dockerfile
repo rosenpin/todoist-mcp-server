@@ -24,5 +24,5 @@ EXPOSE 8765
 # Set the virtual environment in PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Run the clean native FastMCP server
-CMD ["python", "-m", "src.native_server"]
+# Run the final FastMCP server with contextual routing
+CMD ["python", "-m", "src.final_server"]
