@@ -26,15 +26,15 @@
                     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
                     "editor.codeActionsOnSave": {
                         "source.organizeImports": true,
-                        "source.fixAll": true
+                        "source.fixAll": "always"
                     }
                 },
                 "[javascript]": {
                     "editor.formatOnSave": true,
                     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
                     "editor.codeActionsOnSave": {
-                        "source.organizeImports": true,
-                        "source.fixAll": true
+                        "source.organizeImports": "always",
+                        "source.fixAll": "always"
                     }
                 }
             },
@@ -42,7 +42,6 @@
                 "dbaeumer.vscode-eslint",
                 "esbenp.prettier-vscode",
                 "ms-vscode.vscode-typescript-next",
-                "ms-vscode.vscode-typescript-tslint-plugin",
                 "ms-azuretools.vscode-docker",
                 "github.vscode-github-actions",
                 "tamasfe.even-better-toml",

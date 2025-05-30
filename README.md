@@ -1,65 +1,82 @@
-# Todoist MCP Cloudflare Worker
+# Todoist Claude Integration (MCP Server)
 
-A Todoist MCP server implementation using Cloudflare Workers and the `agents` library, following the proven git-mcp pattern.
+Connect your Todoist account to Claude and supercharge your productivity with natural language task management!
 
-## Features
+---
 
-- ✅ **Working with Claude integrations** - Uses the proven `agents` library pattern
-- 🔧 **Three Todoist tools**: `list_projects`, `list_tasks`, `add_task`
-- 🌐 **SSE Transport** - Handles Server-Sent Events properly
-- 📝 **Demo responses** - Ready to test immediately
-- 🚀 **Cloudflare Workers** - Fast, global deployment
+## 🚀 What is this?
 
-## Quick Deploy
+This is a remote [Model Context Protocol (MCP)](https://www.anthropic.com/news/integrations) server that lets you connect [Claude](https://claude.ai/) to your Todoist account. Once connected, you can ask Claude to:
 
-1. **Get Cloudflare API Token**:
-   - Go to https://developers.cloudflare.com/fundamentals/api/get-started/create-token/
-   - Create token with "Edit Cloudflare Workers" permissions
-   - Set environment variable: `export CLOUDFLARE_API_TOKEN=your_token_here`
+- Add new tasks to Todoist
+- List, update, or complete your tasks
+- Plan your schedule and manage projects
+- Use natural language to interact with your to-do list
 
-2. **Deploy**:
-   ```bash
-   cd /workspaces/todoist-mcp-server/cloudflare-worker
-   npm install
-   npx wrangler deploy
-   ```
+All from within Claude, using secure, private integration.
 
-3. **Get your URL**:
-   After deployment, you'll get a URL like: `https://todoist-mcp-server.your-username.workers.dev`
+---
 
-4. **Add to Claude integrations**:
-   Use the full HTTPS URL in Claude integrations - no additional setup needed!
+## ✨ Features
 
-## Tools Available
+- **Add tasks**: "Remind me to call Alice tomorrow at 10am."
+- **List projects & tasks**: "What are my tasks for today?"
+- **Update or complete tasks**: "Mark 'Buy groceries' as done."
+- **Full Todoist support**: Projects, labels, priorities, due dates, and more.
+- **Secure**: Your Todoist token is stored securely and only used for your requests.
 
-### `list_projects`
-Lists all Todoist projects (currently returns demo data).
+---
 
-### `list_tasks` 
-Lists tasks from a specific project or all tasks.
-- Optional parameter: `project_name`
+## 🛠️ How to Set Up
 
-### `add_task`
-Adds a new task to Todoist.
-- Required: `content` (task description)
-- Optional: `project_name`, `due_date`
+1. **Get your Todoist API token:**
 
-## Development
+   - Go to [Todoist Integrations](https://todoist.com/prefs/integrations)
+   - Copy your API token
 
-```bash
-# Start local development server
-npm run dev
+2. **Open the integration setup page:**
 
-# View logs
-npm run tail
-```
+   - Visit https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev
+   - Paste your Todoist API token and submit
 
-## Why This Works
+3. **Get your personalized integration URL:**
 
-This implementation follows the exact pattern used by git-mcp:
-- Uses the `agents` library with `McpAgent` class
-- Handles SSE transport automatically
-- Proper request routing and protocol detection
-- CORS headers for browser compatibility
+   - After setup, you'll receive a unique URL for Claude
 
-Unlike the previous WebSocket attempts, this uses the proven SSE pattern that Claude integrations expect.
+4. **Add the integration to Claude:**
+
+   - Go to [Claude Integrations](https://claude.ai/settings/integrations)
+   - Click "Add Integration" and paste your URL
+   - Follow the prompts to connect
+
+5. **Start chatting!**
+   - In Claude, say things like:
+     - "Add a task to call Bob next Monday."
+     - "Show me my tasks for this week."
+     - "Complete the task 'Submit report'."
+
+---
+
+## 📚 Resources
+
+- [Anthropic: Integrations Overview](https://www.anthropic.com/news/integrations)
+- [Anthropic: Setting up Integrations](https://support.anthropic.com/en/articles/10168395-setting-up-integrations-on-claude-ai)
+- [Todoist API Docs](https://developer.todoist.com/rest/v2/)
+
+---
+
+## 🛡️ Privacy & Security
+
+- Your Todoist token is stored securely and never shared.
+- This server only accesses your Todoist data to fulfill your requests.
+- You can revoke access at any time by removing the integration or resetting your token.
+
+---
+
+## 💬 Support
+
+For help or questions, see the [Anthropic support article](https://support.anthropic.com/en/articles/10168395-setting-up-integrations-on-claude-ai) or contact your integration admin.
+
+---
+
+Happy tasking! ✨
