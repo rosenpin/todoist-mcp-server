@@ -45,6 +45,6 @@ cdk.out/
 
 # Docker
 .dockerignore
-examples/
+.examples/
 .wrangler/
 .claude/
