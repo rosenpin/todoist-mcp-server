@@ -9,7 +9,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
     if (subscriptionCheck && !subscriptionCheck.isActive) {
       return {
         content: [{
-          type: "text",
+          type: "text" as const,
           text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
         }]
       };
@@ -35,7 +35,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: "❌ **Error:** Please provide either taskId or projectId",
             },
           ],
@@ -52,7 +52,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: `💬 **No comments found** for ${args.taskId ? `task ${args.taskId}` : `project ${args.projectId}`}`,
               },
             ],
@@ -66,7 +66,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `💬 **Comments:**\n\n${commentsText}\n\n*Found ${comments.length} comments*`,
             },
           ],
@@ -76,7 +76,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error fetching comments:** ${error}`,
             },
           ],
@@ -105,7 +105,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: "❌ **Error:** Please provide either taskId or projectId",
             },
           ],
@@ -121,7 +121,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Comment Added Successfully!**\n\n💬 **Content:** ${comment.content}\n🆔 **ID:** ${comment.id}\n📍 **Target:** ${args.taskId ? `Task ${args.taskId}` : `Project ${args.projectId}`}`,
             },
           ],
@@ -131,7 +131,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error creating comment:** ${error}`,
             },
           ],

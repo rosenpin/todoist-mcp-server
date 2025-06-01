@@ -49,3 +49,5 @@ cdk.out/
 .claude/
 .mcp.json
 screenshots/
+
+src/*generated.ts

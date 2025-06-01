@@ -9,7 +9,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
     if (subscriptionCheck && !subscriptionCheck.isActive) {
       return {
         content: [{
-          type: "text",
+          type: "text" as const,
           text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
         }]
       };
@@ -32,7 +32,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `📋 **Your Todoist Projects:**\n\n${projects.map(p => `• **${p.name}** (${p.id})`).join('\n')}\n\n*Found ${projects.length} projects*`,
             },
           ],
@@ -42,7 +42,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error fetching projects:** ${error}`,
             },
           ],
@@ -79,7 +79,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Project Created Successfully!**\n\n📁 **Name:** ${project.name}\n🆔 **ID:** ${project.id}\n🎨 **Color:** ${project.color}${project.isFavorite ? "\n⭐ **Favorited**" : ""}`,
             },
           ],
@@ -89,7 +89,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error creating project:** ${error}`,
             },
           ],
@@ -125,7 +125,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Project ${args.projectId} updated successfully!**`,
             },
           ],
@@ -135,7 +135,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error updating project:** ${error}`,
             },
           ],
@@ -162,7 +162,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Project ${args.projectId} deleted successfully!**`,
             },
           ],
@@ -172,7 +172,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error deleting project:** ${error}`,
             },
           ],

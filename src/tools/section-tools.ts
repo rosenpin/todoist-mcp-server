@@ -9,7 +9,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
     if (subscriptionCheck && !subscriptionCheck.isActive) {
       return {
         content: [{
-          type: "text",
+          type: "text" as const,
           text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
         }]
       };
@@ -36,7 +36,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: "📋 **No sections found**" + (args.projectId ? ` in project ${args.projectId}` : ""),
               },
             ],
@@ -50,7 +50,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `📋 **Sections:**\n\n${sectionsText}\n\n*Found ${sections.length} sections*`,
             },
           ],
@@ -60,7 +60,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error fetching sections:** ${error}`,
             },
           ],
@@ -93,7 +93,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Section Created Successfully!**\n\n📂 **Name:** ${section.name}\n🆔 **ID:** ${section.id}\n📁 **Project:** ${section.projectId}`,
             },
           ],
@@ -103,7 +103,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error creating section:** ${error}`,
             },
           ],

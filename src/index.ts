@@ -2,7 +2,7 @@ import { deleteUser, ensureSubscriptions, getToken, setToken } from "./database.
 import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
 import { SubscriptionManager } from "./subscription.js";
 import { TodoistMCP } from "./todoist-mcp.js";
-import { renderOAuthSetupPage, renderSuccessPage } from "./ui.js";
+import { renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
 
 // Export Durable Object class for Cloudflare Workers
 export { TodoistMCP };

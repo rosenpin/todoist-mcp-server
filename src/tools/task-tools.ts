@@ -9,7 +9,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
     if (subscriptionCheck && !subscriptionCheck.isActive) {
       return {
         content: [{
-          type: "text",
+          type: "text" as const,
           text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
         }]
       };
@@ -60,7 +60,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: "📝 **No tasks found** matching your criteria.",
               },
             ],
@@ -75,7 +75,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `📝 **Your Tasks:**\n\n${tasksText}\n\n*Found ${tasks.length} tasks${filter ? ` with filter: ${filter}` : ''}*`,
             },
           ],
@@ -85,7 +85,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error fetching tasks:** ${error}`,
             },
           ],
@@ -144,7 +144,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Task Created Successfully!**\n\n📋 **Task:** ${task.content}\n🆔 **ID:** ${task.id}\n📁 **Priority:** ${task.priority}${dueString ? `\n📅 **Due:** ${dueString}` : ''}${task.description ? `\n📝 **Description:** ${task.description}` : ''}`,
             },
           ],
@@ -154,7 +154,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error creating task:** ${error}`,
             },
           ],
@@ -193,7 +193,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Task ${args.taskId} updated successfully!**`,
             },
           ],
@@ -203,7 +203,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error updating task:** ${error}`,
             },
           ],
@@ -230,7 +230,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Task ${args.taskId} marked as completed!**`,
             },
           ],
@@ -240,7 +240,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error completing task:** ${error}`,
             },
           ],
@@ -267,7 +267,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `🔄 **Task ${args.taskId} marked as active again!**`,
             },
           ],
@@ -277,7 +277,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error uncompleting task:** ${error}`,
             },
           ],

@@ -4,8 +4,9 @@
   "description": "Todoist MCP server using Cloudflare Workers and agents library",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "build-templates": "node scripts/build-templates.js",
+    "dev": "npm run build-templates && wrangler dev",
+    "deploy": "npm run build-templates && wrangler deploy",
     "tail": "wrangler tail"
   },
   "dependencies": {

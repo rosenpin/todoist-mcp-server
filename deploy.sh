@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "Building templates..."
+npm run build-templates
+
 echo "Deploy to which environment?"
 echo "1) Preview (default)"
 echo "2) Production"

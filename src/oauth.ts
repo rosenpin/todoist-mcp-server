@@ -1,5 +1,5 @@
 import { getUserIdByTodoistId, setToken, setUserIdForTodoistId, storeOAuthState, validateAndCleanupState } from './database.js';
-import { renderErrorPage } from './ui.js';
+import { renderErrorPage } from './ui-loader.js';
 
 export async function handleOAuthInit(url: URL, env: any): Promise<Response> {
   const state = crypto.randomUUID();
