@@ -15,7 +15,7 @@ interface CustomerData {
 
 const REAL_PRODUCT_ID = 'prod_SPr7UngeVFKIc2'
 const TEST_PRODUCT_ID = 'prod_SPrnBOeb2hFVJR';
-const PRODUCT_ID = REAL_PRODUCT_ID; // Change to REAL_PRODUCT_ID in production
+const PRODUCT_ID = TEST_PRODUCT_ID; // Using test product for development
 const TRIAL_DAYS = 3;
 
 export class SubscriptionManager {

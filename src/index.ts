@@ -1,8 +1,8 @@
-import { TodoistMCP } from "./todoist-mcp.js";
-import { handleOAuthInit, handleOAuthCallback, handleOAuthDiscovery } from "./oauth.js";
-import { renderOAuthSetupPage, renderSuccessPage } from "./ui.js";
-import { getToken, setToken, deleteUser, ensureSubscriptions } from "./database.js";
+import { deleteUser, ensureSubscriptions, getToken, setToken } from "./database.js";
+import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
 import { SubscriptionManager } from "./subscription.js";
+import { TodoistMCP } from "./todoist-mcp.js";
+import { renderOAuthSetupPage, renderSuccessPage } from "./ui.js";
 
 // Export Durable Object class for Cloudflare Workers
 export { TodoistMCP };
@@ -105,7 +105,7 @@ export default {
         if (!db) {
           return new Response(JSON.stringify({ error: "Database not available" }), {
             status: 500,
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*"
             }
@@ -114,7 +114,7 @@ export default {
 
         await deleteUser(db, userId);
         return new Response(JSON.stringify({ success: true }), {
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
           }
@@ -123,7 +123,7 @@ export default {
         console.error("Error deleting user account:", error);
         return new Response(JSON.stringify({ error: "Failed to delete account" }), {
           status: 500,
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
           }
@@ -147,7 +147,7 @@ export default {
         await ensureSubscriptions(db);
         const result = await db.prepare("SELECT * FROM subscriptions WHERE user_id = ?").bind(userId).first();
         const subscription = result ? JSON.parse(result.subscription_data) : null;
-        
+
         return new Response(JSON.stringify({ subscription }), {
           headers: { "Content-Type": "application/json" }
         });
@@ -194,12 +194,12 @@ export default {
       try {
         // Check if subscriptions are enabled
         if (env.SUBSCRIPTION_ENABLED !== "true") {
-          return new Response(JSON.stringify({ 
+          return new Response(JSON.stringify({
             error: "Subscriptions are currently disabled",
-            paymentUrl: null 
+            paymentUrl: null
           }), {
             status: 200,
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*"
             }
@@ -207,11 +207,11 @@ export default {
         }
 
         const { userId } = await request.json() as { userId: string; email?: string };
-        
+
         if (!env.STRIPE_SECRET_KEY) {
           return new Response(JSON.stringify({ error: "Stripe not configured" }), {
             status: 500,
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*"
             }
@@ -220,11 +220,11 @@ export default {
 
         const subscriptionManager = new SubscriptionManager(env.STRIPE_SECRET_KEY);
         await subscriptionManager.initialize();
-        
+
         const paymentUrl = await subscriptionManager.createPaymentLink(userId);
-        
+
         return new Response(JSON.stringify({ paymentUrl }), {
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
           }
@@ -233,7 +233,7 @@ export default {
         console.error("Error creating subscription:", error);
         return new Response(JSON.stringify({ error: "Failed to create subscription" }), {
           status: 500,
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
           }
@@ -244,24 +244,24 @@ export default {
     if (url.pathname === "/subscription-status" && request.method === "POST") {
       try {
         const { userId } = await request.json() as { userId: string };
-        
+
         // If subscriptions are disabled, return active status
         if (env.SUBSCRIPTION_ENABLED !== "true") {
-          return new Response(JSON.stringify({ 
-            isActive: true, 
+          return new Response(JSON.stringify({
+            isActive: true,
             subscription: { status: 'active', note: 'Subscriptions disabled' }
           }), {
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*"
             }
           });
         }
-        
+
         if (!env.STRIPE_SECRET_KEY) {
           return new Response(JSON.stringify({ error: "Stripe not configured" }), {
             status: 500,
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*"
             }
@@ -274,12 +274,12 @@ export default {
         const context = { requestUrl: request.url };
         const isActive = await subscriptionManager.isSubscriptionActive(userId, context);
         const subscriptionData = await subscriptionManager.getStoredSubscriptionData(context, userId);
-        
-        return new Response(JSON.stringify({ 
-          isActive, 
-          subscription: subscriptionData 
+
+        return new Response(JSON.stringify({
+          isActive,
+          subscription: subscriptionData
         }), {
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
           }
@@ -288,7 +288,7 @@ export default {
         console.error("Error checking subscription status:", error);
         return new Response(JSON.stringify({ error: "Failed to check subscription" }), {
           status: 500,
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*"
           }
@@ -361,7 +361,7 @@ export default {
       if (userId) {
         // Check subscription status for the success page
         let subscriptionStatus = { isActive: true }; // Default to active if subscriptions disabled
-        
+
         if (env.SUBSCRIPTION_ENABLED === "true" && env.STRIPE_SECRET_KEY) {
           try {
             const subscriptionManager = new SubscriptionManager(env.STRIPE_SECRET_KEY);
@@ -375,7 +375,7 @@ export default {
             subscriptionStatus = { isActive: true };
           }
         }
-        
+
         const htmlContent = renderSuccessPage(url.origin, userId, subscriptionStatus);
         return new Response(htmlContent, {
           headers: {
@@ -396,9 +396,9 @@ export default {
 
     // MCP/SSE handling
     const isStreamMethod = request.headers.get("accept")?.includes("text/event-stream");
-    const isMessage = request.method === "POST" && 
-                     url.pathname.includes("/message") && 
-                     url.pathname !== "/message";
+    const isMessage = request.method === "POST" &&
+      url.pathname.includes("/message") &&
+      url.pathname !== "/message";
 
     console.log("Request analysis:", { isStreamMethod, isMessage });
 
