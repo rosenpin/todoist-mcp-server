@@ -8,6 +8,7 @@ import { registerSectionTools } from "./tools/section-tools.js";
 import { registerLabelTools } from "./tools/label-tools.js";
 import { registerCommentTools } from "./tools/comment-tools.js";
 import { registerSetupTool } from "./tools/setup-tool.js";
+import { checkUserSubscription, createSubscriptionError } from "./subscription-utils.js";
 
 // Define the MCP agent for Todoist
 export class TodoistMCP extends McpAgent {
@@ -46,6 +47,34 @@ export class TodoistMCP extends McpAgent {
         requestUrl
       );
       console.log("TodoistMCP server initialized with setup tool only - no token configured");
+      return;
+    }
+
+    // Check subscription status before registering tools
+    const subscriptionCheck = await checkUserSubscription(userId, requestUrl, this.env);
+    
+    if (!subscriptionCheck.isActive) {
+      console.log("User subscription inactive:", userId);
+      // Register a limited tool that shows subscription error
+      const { z } = await import("zod");
+      
+      this.server.tool(
+        "subscription_required",
+        "Your subscription is inactive. Use this tool to get subscription information and payment link.",
+        {
+          action: z.enum(["show_subscription_info"]).optional().describe("Action to perform"),
+        },
+        async (args) => {
+          return {
+            content: [{
+              type: "text",
+              text: `🔒 **Subscription Required**\n\n${subscriptionCheck.message || "Your subscription is inactive. Please subscribe to access Todoist tools."}\n\n${subscriptionCheck.paymentUrl ? `💳 **Subscribe here:** ${subscriptionCheck.paymentUrl}` : "📞 **Please contact support** to activate your subscription."}\n\n🎁 **New users get a 3-day free trial!**\n\n💰 **Price:** $2.99/month\n\n⭐ **What you get:**\n• Full access to all Todoist MCP tools\n• Create, update, and manage tasks\n• Project and section management\n• Label and comment features\n• Unlimited API usage`
+            }]
+          };
+        }
+      );
+      
+      console.log("TodoistMCP server initialized with subscription check only - subscription inactive");
       return;
     }
 

@@ -20,3 +20,12 @@ class_name = "TodoistMCP"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TodoistMCP"]
+
+# Environment variables for subscription system
+[vars]
+# Set to "true" to enable subscription checking (default: disabled)
+SUBSCRIPTION_ENABLED = "true"
+
+# Preview environment configuration
+[env.preview]
+name = "todoist-mcp-server-preview"

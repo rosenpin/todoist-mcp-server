@@ -9,9 +9,10 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
-    "agents": "^0.0.94",
-    "@modelcontextprotocol/sdk": "^1.12.1",
     "@doist/todoist-api-typescript": "^4.0.4",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "agents": "^0.0.94",
+    "stripe": "^18.2.0",
     "zod": "^3.25.43"
   },
   "devDependencies": {
