@@ -1,177 +1,74 @@
-import { TodoistTask, TodoistProject } from './types.js';
+import { TodoistApi } from '@doist/todoist-api-typescript';
+import type { 
+  Task, 
+  Project, 
+  Section, 
+  Label, 
+  Comment 
+} from '@doist/todoist-api-typescript';
 
 export class TodoistClient {
-  private baseURL = 'https://api.todoist.com/api/v1';
-  private apiToken: string;
+  private api: TodoistApi;
 
   constructor(apiToken: string) {
-    this.apiToken = apiToken;
+    this.api = new TodoistApi(apiToken);
   }
 
-  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const headers = {
-      'Authorization': `Bearer ${this.apiToken}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `Todoist API error (${response.status}): ${errorText}`;
-
-      // Try to parse JSON error response if available
-      try {
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.error) {
-          errorMessage = `Todoist API error (${response.status}): ${errorJson.error}`;
-        }
-      } catch {
-        // Keep original error message if not JSON
-      }
-
-      throw new Error(errorMessage);
-    }
-
-    return response.json() as T;
-  }
-
-  async getProjects(): Promise<TodoistProject[]> {
-    // The v1 API returns paginated results
-    interface ProjectsResponse {
-      results: TodoistProject[];
-      next_cursor: string | null;
-    }
-
-    const allProjects: TodoistProject[] = [];
-    let cursor: string | null = null;
-
-    // Fetch all pages
-    do {
-      const params = new URLSearchParams();
-      if (cursor) {
-        params.append('cursor', cursor);
-      }
-      params.append('limit', '200'); // Max limit per API docs
-
-      const endpoint = `/projects?${params.toString()}`;
-      const response = await this.makeRequest<ProjectsResponse>(endpoint);
-
-      allProjects.push(...response.results);
-      cursor = response.next_cursor;
-    } while (cursor);
-
-    return allProjects;
-  }
-
-  async getTasks(filter?: string): Promise<TodoistTask[]> {
+  // Task methods
+  async getTasks(filter?: string): Promise<Task[]> {
     if (filter) {
-      // Use the new filter endpoint for filtered queries
-      interface FilteredTasksResponse {
-        results: TodoistTask[];
-        next_cursor: string | null;
-      }
-
-      const allTasks: TodoistTask[] = [];
-      let cursor: string | null = null;
-
-      do {
-        const params = new URLSearchParams();
-        params.append('query', filter);
-        if (cursor) {
-          params.append('cursor', cursor);
-        }
-        params.append('limit', '200');
-
-        const endpoint = `/tasks/filter?${params.toString()}`;
-        const response = await this.makeRequest<FilteredTasksResponse>(endpoint);
-
-        allTasks.push(...response.results);
-        cursor = response.next_cursor;
-      } while (cursor);
-
-      return allTasks;
+      // Use the filter endpoint for queries
+      const response = await this.api.getTasksByFilter({
+        query: filter,
+        limit: 200
+      });
+      return response.results;
     } else {
-      // Regular tasks endpoint for all tasks
-      interface TasksResponse {
-        results: TodoistTask[];
-        next_cursor: string | null;
-      }
-
-      const allTasks: TodoistTask[] = [];
-      let cursor: string | null = null;
-
-      do {
-        const params = new URLSearchParams();
-        if (cursor) {
-          params.append('cursor', cursor);
-        }
-        params.append('limit', '200');
-
-        const endpoint = `/tasks?${params.toString()}`;
-        const response = await this.makeRequest<TasksResponse>(endpoint);
-
-        allTasks.push(...response.results);
-        cursor = response.next_cursor;
-      } while (cursor);
-
-      return allTasks;
+      // Get all tasks
+      const response = await this.api.getTasks({
+        limit: 200
+      });
+      return response.results;
     }
+  }
+
+  async getTask(taskId: string): Promise<Task> {
+    return this.api.getTask(taskId);
   }
 
   async createTask(task: {
-    content: string; // required, non-empty
+    content: string;
     description?: string | null;
-    projectId?: string | number | null;
-    sectionId?: string | number | null;
-    parentId?: string | number | null;
+    projectId?: string | null;
+    sectionId?: string | null;
+    parentId?: string | null;
     order?: number | null;
     labels?: string[] | null;
     priority?: number | null;
-    assigneeId?: number | null;
+    assigneeId?: string | null;
     dueString?: string | null;
     dueDate?: string | null;
     dueDatetime?: string | null;
     dueLang?: string | null;
     duration?: number | null;
-    durationUnit?: string | null;
-    deadlineDate?: string | null;
-    deadlineLang?: string | null;
-  }): Promise<TodoistTask> {
-    const body = {
-      content: task.content,
-      description: task.description,
-      project_id: task.projectId,
-      section_id: task.sectionId,
-      parent_id: task.parentId,
-      order: task.order,
-      labels: task.labels,
-      priority: task.priority,
-      assignee_id: task.assigneeId,
-      due_string: task.dueString,
-      due_date: task.dueDate,
-      due_datetime: task.dueDatetime,
-      due_lang: task.dueLang,
-      duration: task.duration,
-      duration_unit: task.durationUnit,
-      deadline_date: task.deadlineDate,
-      deadline_lang: task.deadlineLang,
-    };
-
-    // Remove undefined values
-    const cleanBody = Object.fromEntries(
-      Object.entries(body).filter(([_, value]) => value !== undefined)
-    );
-
-    return this.makeRequest<TodoistTask>('/tasks', {
-      method: 'POST',
-      body: JSON.stringify(cleanBody),
+    durationUnit?: 'minute' | 'day' | null;
+  }): Promise<Task> {
+    const { dueDatetime, dueDate, content, ...rest } = task;
+    const args: any = { content };
+    
+    // Add non-null optional fields
+    Object.entries(rest).forEach(([key, value]) => {
+      if (value != null) args[key] = value;
     });
+    
+    // Handle mutually exclusive due date fields
+    if (dueDatetime != null) {
+      args.dueDatetime = dueDatetime;
+    } else if (dueDate != null) {
+      args.dueDate = dueDate;
+    }
+    
+    return this.api.addTask(args);
   }
 
   async updateTask(taskId: string, updates: {
@@ -180,35 +77,236 @@ export class TodoistClient {
     labels?: string[];
     priority?: number;
     dueString?: string;
-  }): Promise<void> {
-    const body = {
-      content: updates.content,
-      description: updates.description,
-      labels: updates.labels,
-      priority: updates.priority,
-      due_string: updates.dueString
-    };
-
-    // Remove undefined values
-    const cleanBody = Object.fromEntries(
-      Object.entries(body).filter(([_, value]) => value !== undefined)
-    );
-
-    await this.makeRequest(`/tasks/${taskId}`, {
-      method: 'POST',
-      body: JSON.stringify(cleanBody),
+    dueDate?: string;
+    dueDatetime?: string;
+    dueLang?: string;
+    assigneeId?: string;
+  }): Promise<Task> {
+    const { dueDatetime, dueDate, ...rest } = updates;
+    const args: any = {};
+    
+    // Add defined fields (including null for clearing)
+    Object.entries(rest).forEach(([key, value]) => {
+      if (value !== undefined) args[key] = value;
     });
+    
+    // Handle mutually exclusive due date fields
+    if (dueDatetime !== undefined) {
+      args.dueDatetime = dueDatetime;
+    } else if (dueDate !== undefined) {
+      args.dueDate = dueDate;
+    }
+    
+    return this.api.updateTask(taskId, args);
   }
 
   async completeTask(taskId: string): Promise<void> {
-    await this.makeRequest(`/tasks/${taskId}/close`, {
-      method: 'POST',
-    });
+    await this.api.closeTask(taskId);
   }
 
   async uncompleteTask(taskId: string): Promise<void> {
-    await this.makeRequest(`/tasks/${taskId}/reopen`, {
-      method: 'POST',
+    await this.api.reopenTask(taskId);
+  }
+
+  async deleteTask(taskId: string): Promise<void> {
+    await this.api.deleteTask(taskId);
+  }
+
+  async moveTasks(taskIds: string[], destination: {
+    projectId?: string;
+    sectionId?: string;
+    parentId?: string;
+  }): Promise<Task[]> {
+    const { projectId, sectionId, parentId } = destination;
+    const args: any = {};
+    
+    const provided = [projectId, sectionId, parentId].filter(v => v != null);
+    if (provided.length !== 1) {
+      throw new Error('Must provide exactly one of projectId, sectionId, or parentId');
+    }
+    
+    if (projectId != null) args.projectId = projectId;
+    else if (sectionId != null) args.sectionId = sectionId;
+    else if (parentId != null) args.parentId = parentId;
+    
+    return this.api.moveTasks(taskIds, args);
+  }
+
+  // Project methods
+  async getProjects(): Promise<Project[]> {
+    const response = await this.api.getProjects({
+      limit: 200
     });
+    return response.results;
+  }
+
+  async getProject(projectId: string): Promise<Project> {
+    return this.api.getProject(projectId);
+  }
+
+  async createProject(project: {
+    name: string;
+    parentId?: string | null;
+    color?: string | null;
+    isFavorite?: boolean | null;
+    viewStyle?: 'list' | 'board' | null;
+  }): Promise<Project> {
+    const { name, ...rest } = project;
+    const args: any = { name };
+    
+    // Add non-null optional fields
+    Object.entries(rest).forEach(([key, value]) => {
+      if (value != null) args[key] = value;
+    });
+    
+    return this.api.addProject(args);
+  }
+
+  async updateProject(projectId: string, updates: {
+    name?: string;
+    color?: string;
+    isFavorite?: boolean;
+    viewStyle?: 'list' | 'board';
+  }): Promise<Project> {
+    return this.api.updateProject(projectId, updates);
+  }
+
+  async deleteProject(projectId: string): Promise<void> {
+    await this.api.deleteProject(projectId);
+  }
+
+  // Section methods
+  async getSections(projectId?: string): Promise<Section[]> {
+    const args: any = {
+      limit: 200
+    };
+    if (projectId) {
+      args.projectId = projectId;
+    }
+    const response = await this.api.getSections(args);
+    return response.results;
+  }
+
+  async getSection(sectionId: string): Promise<Section> {
+    return this.api.getSection(sectionId);
+  }
+
+  async createSection(section: {
+    name: string;
+    projectId: string;
+    order?: number | null;
+  }): Promise<Section> {
+    const { name, projectId, order } = section;
+    const args: any = { name, projectId };
+    
+    if (order != null) args.order = order;
+    
+    return this.api.addSection(args);
+  }
+
+  async updateSection(sectionId: string, updates: {
+    name: string;
+  }): Promise<Section> {
+    return this.api.updateSection(sectionId, updates);
+  }
+
+  async deleteSection(sectionId: string): Promise<void> {
+    await this.api.deleteSection(sectionId);
+  }
+
+  // Label methods
+  async getLabels(): Promise<Label[]> {
+    const response = await this.api.getLabels({
+      limit: 200
+    });
+    return response.results;
+  }
+
+  async getLabel(labelId: string): Promise<Label> {
+    return this.api.getLabel(labelId);
+  }
+
+  async createLabel(label: {
+    name: string;
+    color?: string | null;
+    order?: number | null;
+    isFavorite?: boolean | null;
+  }): Promise<Label> {
+    const { name, ...rest } = label;
+    const args: any = { name };
+    
+    // Add non-null optional fields
+    Object.entries(rest).forEach(([key, value]) => {
+      if (value != null) args[key] = value;
+    });
+    
+    return this.api.addLabel(args);
+  }
+
+  async updateLabel(labelId: string, updates: {
+    name?: string;
+    color?: string;
+    order?: number;
+    isFavorite?: boolean;
+  }): Promise<Label> {
+    return this.api.updateLabel(labelId, updates);
+  }
+
+  async deleteLabel(labelId: string): Promise<void> {
+    await this.api.deleteLabel(labelId);
+  }
+
+  // Comment methods
+  async getComments(params: { taskId?: string; projectId?: string }): Promise<Comment[]> {
+    if (params.taskId) {
+      const response = await this.api.getComments({ 
+        taskId: params.taskId,
+        limit: 200 
+      });
+      return response.results;
+    } else if (params.projectId) {
+      const response = await this.api.getComments({ 
+        projectId: params.projectId,
+        limit: 200 
+      });
+      return response.results;
+    } else {
+      throw new Error('Either taskId or projectId must be provided');
+    }
+  }
+
+  async getComment(commentId: string): Promise<Comment> {
+    return this.api.getComment(commentId);
+  }
+
+  async createComment(comment: {
+    content: string;
+    taskId?: string | null;
+    projectId?: string | null;
+    attachment?: any | null;
+  }): Promise<Comment> {
+    if (!comment.taskId && !comment.projectId) {
+      throw new Error('Either taskId or projectId must be provided');
+    }
+    
+    const { content, taskId, projectId, attachment } = comment;
+    const args: any = { content };
+    
+    if (taskId != null) args.taskId = taskId;
+    if (projectId != null) args.projectId = projectId;
+    if (attachment != null) args.attachment = attachment;
+    
+    return this.api.addComment(args);
+  }
+
+  async updateComment(commentId: string, content: string): Promise<Comment> {
+    return this.api.updateComment(commentId, { content });
+  }
+
+  async deleteComment(commentId: string): Promise<void> {
+    await this.api.deleteComment(commentId);
   }
 }
+
+// Re-export types from the official library for convenience
+export type { Task, Project, Section, Label, Comment } from '@doist/todoist-api-typescript';

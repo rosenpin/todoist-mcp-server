@@ -48,3 +48,4 @@ cdk.out/
 .examples/
 .wrangler/
 .claude/
+.mcp.json

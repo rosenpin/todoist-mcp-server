@@ -9,13 +9,14 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
-    "agents": "^0.0.84",
-    "@modelcontextprotocol/sdk": "^1.11.2",
-    "zod": "^3.24.3"
+    "agents": "^0.0.94",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@doist/todoist-api-typescript": "^4.0.4",
+    "zod": "^3.25.43"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241106.0",
-    "typescript": "^5.4.5",
-    "wrangler": "^3.84.0"
+    "@cloudflare/workers-types": "^4.20250531.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.18.0"
   }
 }

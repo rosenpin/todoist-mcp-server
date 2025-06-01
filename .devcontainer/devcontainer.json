@@ -25,7 +25,7 @@
                     "editor.formatOnSave": true,
                     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
                     "editor.codeActionsOnSave": {
-                        "source.organizeImports": true,
+                        "source.organizeImports": "always",
                         "source.fixAll": "always"
                     }
                 },
