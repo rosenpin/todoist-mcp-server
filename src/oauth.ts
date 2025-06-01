@@ -1,10 +1,10 @@
-import { storeOAuthState, validateAndCleanupState, setToken, getUserIdByTodoistId, setUserIdForTodoistId } from './database.js';
+import { getUserIdByTodoistId, setToken, setUserIdForTodoistId, storeOAuthState, validateAndCleanupState } from './database.js';
 import { renderErrorPage } from './ui.js';
 
 export async function handleOAuthInit(url: URL, env: any): Promise<Response> {
   const state = crypto.randomUUID();
   const clientId = env.CLIENT_ID;
-  
+
   if (!clientId) {
     return new Response("OAuth not configured - CLIENT_ID missing", { status: 500 });
   }
@@ -33,7 +33,7 @@ export async function handleOAuthCallback(url: URL, env: any): Promise<Response>
   try {
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
-    
+
     if (!code || !state) {
       throw new Error("Missing authorization code or state");
     }
@@ -87,11 +87,11 @@ export async function handleOAuthCallback(url: URL, env: any): Promise<Response>
     const todoistUserId = userData.id;
 
     let userId: string;
-    
+
     if (db) {
       // Check if user already exists
       const existingUserId = await getUserIdByTodoistId(db, todoistUserId);
-      
+
       if (existingUserId) {
         // User exists, update their token and use existing userId
         userId = existingUserId;

@@ -85,8 +85,9 @@ export function renderOAuthSetupPage(): string {
   `;
 }
 
-export function renderSuccessPage(baseUrl: string, userId: string): string {
+export function renderSuccessPage(baseUrl: string, userId: string, subscriptionStatus?: any): string {
   const integrationUrl = `${baseUrl}/?user_id=${userId}`;
+  const isSubscriptionActive = subscriptionStatus?.isActive || false;
   
   return `
     <!DOCTYPE html>
@@ -123,23 +124,75 @@ export function renderSuccessPage(baseUrl: string, userId: string): string {
       
       <!-- Main card -->
       <div class="bg-white rounded-2xl p-6 sm:p-10 max-w-4xl w-full shadow-2xl">
+        <!-- Subscription Status -->
+        <div class="mb-8">
+          ${isSubscriptionActive ? `
+            <div class="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+              <div class="flex items-center gap-2 text-green-700 font-semibold mb-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.41,10.09L6,11.5L11,16.5Z"/>
+                </svg>
+                ✅ Subscription Active
+              </div>
+              <p class="text-green-600 text-sm">Your subscription is active and all Todoist tools are available!</p>
+            </div>
+          ` : `
+            <div class="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
+              <div class="flex items-center gap-2 text-orange-700 font-semibold mb-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/>
+                </svg>
+                🎁 Free Trial Available
+              </div>
+              <p class="text-orange-600 text-sm mb-3">
+                Start your <strong>3-day free trial</strong> to access all Todoist tools! Only <strong>$2.99/month</strong> after trial.
+              </p>
+              <button onclick="createSubscription()" 
+                      class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:shadow-lg transition-all duration-200"
+                      id="subscribeBtn">
+                Start Free Trial
+              </button>
+            </div>
+          `}
+        </div>
+        
         <!-- URL Section -->
         <div class="mb-8">
           <div class="text-xl font-bold text-gray-900 mb-3">Your Personal MCP Integration URL</div>
+          ${!isSubscriptionActive ? `
+            <div class="bg-gray-50 border-2 border-gray-200 rounded-xl p-4 mb-4">
+              <div class="flex items-center gap-2 text-gray-600 font-semibold mb-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.1,7 14,7.9 14,9C14,10.1 13.1,11 12,11C10.9,11 10,10.1 10,9C10,7.9 10.9,7 12,7M12,17C9.97,17 8.17,15.85 7.29,14.14C7.82,13.5 9.94,13 12,13C14.06,13 16.18,13.5 16.71,14.14C15.83,15.85 14.03,17 12,17Z"/>
+                </svg>
+                Subscription Required
+              </div>
+              <p class="text-gray-600 text-sm">
+                Your integration URL is ready, but you'll need an active subscription to use the Todoist tools. 
+                Start your free trial above to unlock all features!
+              </p>
+            </div>
+          ` : ''}
           <div class="relative mb-4">
             <input type="text" 
                    class="w-full p-4 pr-16 font-mono text-sm bg-gray-50 border-2 border-gray-200 
-                          rounded-lg text-gray-700 break-all" 
+                          rounded-lg text-gray-700 break-all ${!isSubscriptionActive ? 'filter blur-sm' : ''}" 
                    value="${integrationUrl}" 
                    readonly 
                    id="integrationUrl">
-            <button class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 
+            <button class="absolute right-2 top-1/2 -translate-y-1/2 ${isSubscriptionActive ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-400 cursor-not-allowed'} 
                            text-white px-3 py-2 rounded text-xs font-semibold transition-colors" 
-                    onclick="copyToClipboard()" 
-                    id="copyBtn">
-              Copy
+                    onclick="${isSubscriptionActive ? 'copyToClipboard()' : 'alert(\'Please activate your subscription first\')'}" 
+                    id="copyBtn"
+                    ${!isSubscriptionActive ? 'disabled' : ''}>
+              ${isSubscriptionActive ? 'Copy' : 'Locked'}
             </button>
           </div>
+          ${!isSubscriptionActive ? `
+            <div class="text-center">
+              <p class="text-gray-500 text-sm italic">URL will be revealed after subscription activation</p>
+            </div>
+          ` : ''}
         </div>
         
         <!-- Security Warning -->
@@ -315,6 +368,38 @@ export function renderSuccessPage(baseUrl: string, userId: string): string {
               copyBtn.classList.remove('bg-green-500');
               copyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
             }, 2000);
+          });
+        }
+        
+        function createSubscription() {
+          const subscribeBtn = document.getElementById('subscribeBtn');
+          const originalText = subscribeBtn.innerHTML;
+          
+          subscribeBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="currentColor"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>Creating...';
+          subscribeBtn.disabled = true;
+          
+          fetch('/create-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId: '${userId}' })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.paymentUrl) {
+              window.location.href = data.paymentUrl;
+            } else {
+              alert('Failed to create subscription: ' + (data.error || 'Unknown error'));
+              subscribeBtn.innerHTML = originalText;
+              subscribeBtn.disabled = false;
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to create subscription: Network error');
+            subscribeBtn.innerHTML = originalText;
+            subscribeBtn.disabled = false;
           });
         }
         

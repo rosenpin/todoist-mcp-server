@@ -24,7 +24,7 @@ new_sqlite_classes = ["TodoistMCP"]
 # Environment variables for subscription system
 [vars]
 # Set to "true" to enable subscription checking (default: disabled)
-SUBSCRIPTION_ENABLED = "true"
+SUBSCRIPTION_ENABLED = "false"
 
 # Preview environment configuration
 [env.preview]

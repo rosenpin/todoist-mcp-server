@@ -13,8 +13,9 @@ interface CustomerData {
   currentPeriodEnd?: Date;
 }
 
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51RV17ZE1KYht5efIyvzNXYlrqbGi3kIlBEMHerC10HqmWTa0Kc0VUsJdtCEbFxYi6rhUae8Kp9k3fDtTImo8L7pC00rVd4LByT';
-const PRODUCT_ID = 'prod_SPr7UngeVFKIc2';
+const REAL_PRODUCT_ID = 'prod_SPr7UngeVFKIc2'
+const TEST_PRODUCT_ID = 'prod_SPrnBOeb2hFVJR';
+const PRODUCT_ID = REAL_PRODUCT_ID; // Change to REAL_PRODUCT_ID in production
 const TRIAL_DAYS = 3;
 
 export class SubscriptionManager {
@@ -39,8 +40,8 @@ export class SubscriptionManager {
         active: true,
       });
 
-      const existingPrice = prices.data.find(price => 
-        price.unit_amount === 299 && 
+      const existingPrice = prices.data.find(price =>
+        price.unit_amount === 299 &&
         price.currency === 'usd' &&
         price.recurring?.interval === 'month'
       );
@@ -131,7 +132,7 @@ export class SubscriptionManager {
       }
 
       const customer = customers.data[0];
-      
+
       // Get active subscriptions
       const subscriptions = await this.stripe.subscriptions.list({
         customer: customer.id,
@@ -152,7 +153,7 @@ export class SubscriptionManager {
       const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
 
       let status: CustomerData['status'] = 'inactive';
-      
+
       if (subscription.status === 'trialing' && trialEnd && trialEnd > now) {
         status = 'trial';
       } else if (subscription.status === 'active') {
@@ -177,7 +178,7 @@ export class SubscriptionManager {
   async createPaymentLink(userId: string): Promise<string> {
     try {
       const customerId = await this.getOrCreateCustomer(userId);
-      
+
       // Create a subscription checkout session
       const session = await this.stripe.checkout.sessions.create({
         customer: customerId,
@@ -207,9 +208,9 @@ export class SubscriptionManager {
     }
   }
 
-  private getBaseUrl(userId: string): string {
+  private getBaseUrl(_userId: string): string {
     // This would be your server's base URL
-    return `https://todoist-mcp-server.your-domain.workers.dev`;
+    return `https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev`;
   }
 
   async handleWebhook(event: Stripe.Event, context: SubscriptionContext): Promise<void> {
@@ -221,14 +222,14 @@ export class SubscriptionManager {
           const subscription = event.data.object as Stripe.Subscription;
           await this.updateSubscriptionInStorage(subscription, context);
           break;
-        
+
         case 'invoice.payment_succeeded':
           const invoice = event.data.object as Stripe.Invoice;
           if ((invoice as any).subscription) {
             console.log(`Payment succeeded for subscription: ${(invoice as any).subscription}`);
           }
           break;
-        
+
         case 'invoice.payment_failed':
           const failedInvoice = event.data.object as Stripe.Invoice;
           if ((failedInvoice as any).subscription) {
@@ -249,7 +250,7 @@ export class SubscriptionManager {
     try {
       const customer = await this.stripe.customers.retrieve(subscription.customer as string) as Stripe.Customer;
       const userId = customer.metadata?.userId;
-      
+
       if (!userId) {
         console.error('No userId found in customer metadata');
         return;
@@ -352,7 +353,7 @@ export class SubscriptionManager {
         if (storedData.status === 'trial' && storedData.trialEnd && storedData.trialEnd > now) {
           return true;
         }
-        
+
         // Check active subscription
         if (storedData.status === 'active' && storedData.currentPeriodEnd && storedData.currentPeriodEnd > now) {
           return true;

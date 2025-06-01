@@ -2,13 +2,30 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodoistClient } from "../todoist-client.js";
 
-export function registerProjectTools(server: McpServer, todoistClient: TodoistClient) {
+export function registerProjectTools(server: McpServer, todoistClient: TodoistClient, subscriptionCheck?: any) {
+  
+  // Helper function to return subscription error
+  const checkSubscription = () => {
+    if (subscriptionCheck && !subscriptionCheck.isActive) {
+      return {
+        content: [{
+          type: "text",
+          text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
+        }]
+      };
+    }
+    return null;
+  };
   // Register list_projects tool
   server.tool(
     "list_projects",
     "List all Todoist projects",
     {},
     async () => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing list_projects tool");
       try {
         const projects = await todoistClient.getProjects();
@@ -46,6 +63,10 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
       viewStyle: z.enum(["list", "board"]).optional().describe("View style: 'list' or 'board' (optional)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing create_project tool", args);
       try {
         const project = await todoistClient.createProject({
@@ -89,6 +110,10 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
       viewStyle: z.enum(["list", "board"]).optional().describe("View style: 'list' or 'board' (optional)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing update_project tool", args);
       try {
         await todoistClient.updateProject(args.projectId, {
@@ -127,6 +152,10 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
       projectId: z.string().describe("ID of the project to delete"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing delete_project tool", args);
       try {
         await todoistClient.deleteProject(args.projectId);

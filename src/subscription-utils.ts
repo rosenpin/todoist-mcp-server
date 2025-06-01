@@ -21,7 +21,7 @@ export async function checkUserSubscription(
     if (!env.STRIPE_SECRET_KEY) {
       return { 
         isActive: false, 
-        message: "Subscription service not configured" 
+        message: "🔒 **Subscription Required**\n\nTo use Todoist MCP tools, please visit our website to manage your subscription.\n\n💰 **$2.99/month** • 🎁 **3-day free trial for new users**\n\nVisit: https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev to get started!" 
       };
     }
 
@@ -32,21 +32,10 @@ export async function checkUserSubscription(
     const isActive = await subscriptionManager.isSubscriptionActive(userId, context);
 
     if (!isActive) {
-      // Generate payment link for inactive users
-      try {
-        const paymentUrl = await subscriptionManager.createPaymentLink(userId);
-        return {
-          isActive: false,
-          message: "Your subscription is inactive. Please subscribe to continue using the Todoist MCP server.",
-          paymentUrl
-        };
-      } catch (error) {
-        console.error("Error creating payment link:", error);
-        return {
-          isActive: false,
-          message: "Your subscription is inactive. Please contact support to reactivate your account."
-        };
-      }
+      return {
+        isActive: false,
+        message: "🔒 **Subscription Required**\n\nYour Todoist MCP subscription is inactive. Please visit our website to manage your subscription.\n\n💰 **$2.99/month** • 🎁 **3-day free trial for new users**\n\nVisit: https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev to subscribe or renew!"
+      };
     }
 
     return { isActive: true };
@@ -57,16 +46,12 @@ export async function checkUserSubscription(
   }
 }
 
-export function createSubscriptionError(message: string, paymentUrl?: string): any {
+export function createSubscriptionError(message: string): any {
   return {
     type: "error",
     error: {
       code: "SUBSCRIPTION_REQUIRED",
-      message: message,
-      details: {
-        paymentUrl: paymentUrl,
-        trialInfo: "New users get a 3-day free trial"
-      }
+      message: message
     }
   };
 }

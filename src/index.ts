@@ -189,7 +189,7 @@ export default {
       }
     }
 
-    // Payment endpoints
+    // Payment endpoints - for website subscription flow
     if (url.pathname === "/create-subscription" && request.method === "POST") {
       try {
         // Check if subscriptions are enabled
@@ -206,7 +206,7 @@ export default {
           });
         }
 
-        const { userId, email } = await request.json() as { userId: string; email?: string };
+        const { userId } = await request.json() as { userId: string; email?: string };
         
         if (!env.STRIPE_SECRET_KEY) {
           return new Response(JSON.stringify({ error: "Stripe not configured" }), {
@@ -358,16 +358,40 @@ export default {
     if (url.pathname === "/" && !request.headers.get("accept")?.includes("text/event-stream")) {
       const userId = url.searchParams.get("user_id");
 
-      const htmlContent = userId 
-        ? renderSuccessPage(url.origin, userId)
-        : renderOAuthSetupPage();
-
-      return new Response(htmlContent, {
-        headers: {
-          "Content-Type": "text/html",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+      if (userId) {
+        // Check subscription status for the success page
+        let subscriptionStatus = { isActive: true }; // Default to active if subscriptions disabled
+        
+        if (env.SUBSCRIPTION_ENABLED === "true" && env.STRIPE_SECRET_KEY) {
+          try {
+            const subscriptionManager = new SubscriptionManager(env.STRIPE_SECRET_KEY);
+            await subscriptionManager.initialize();
+            const context = { requestUrl: request.url };
+            const isActive = await subscriptionManager.isSubscriptionActive(userId, context);
+            subscriptionStatus = { isActive };
+          } catch (error) {
+            console.error("Error checking subscription status:", error);
+            // Default to active on error to prevent blocking
+            subscriptionStatus = { isActive: true };
+          }
+        }
+        
+        const htmlContent = renderSuccessPage(url.origin, userId, subscriptionStatus);
+        return new Response(htmlContent, {
+          headers: {
+            "Content-Type": "text/html",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } else {
+        const htmlContent = renderOAuthSetupPage();
+        return new Response(htmlContent, {
+          headers: {
+            "Content-Type": "text/html",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
     }
 
     // MCP/SSE handling

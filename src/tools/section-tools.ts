@@ -2,7 +2,20 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodoistClient } from "../todoist-client.js";
 
-export function registerSectionTools(server: McpServer, todoistClient: TodoistClient) {
+export function registerSectionTools(server: McpServer, todoistClient: TodoistClient, subscriptionCheck?: any) {
+  
+  // Helper function to return subscription error
+  const checkSubscription = () => {
+    if (subscriptionCheck && !subscriptionCheck.isActive) {
+      return {
+        content: [{
+          type: "text",
+          text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
+        }]
+      };
+    }
+    return null;
+  };
   // Register get_sections tool
   server.tool(
     "get_sections",
@@ -11,6 +24,10 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
       projectId: z.string().optional().describe("Project ID to get sections from (optional, gets all sections if not provided)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing get_sections tool", args);
       try {
         const sections = await todoistClient.getSections(args.projectId);
@@ -62,6 +79,10 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
       order: z.number().optional().describe("Section order/position (optional)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing create_section tool", args);
       try {
         const section = await todoistClient.createSection({
