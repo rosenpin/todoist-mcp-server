@@ -44,6 +44,6 @@ name = "MCP_OBJECT"
 class_name = "TodoistMCP"
 # This creates a separate namespace for preview
 
-[[routes]]
-pattern = "todoist.mcp.rosenpin.io/*"
-zone_name = "rosenpin.io"
+# [[routes]]
+# pattern = "todoist.mcp.rosenpin.io/*"
+# zone_name = "rosenpin.io"
