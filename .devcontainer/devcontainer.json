@@ -48,9 +48,9 @@
                 "redhat.vscode-yaml"
             ]
         }
-    }
+    },
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    // "forwardPorts": [],
+    "forwardPorts": [8000, 8787]
     // Use 'postCreateCommand' to run commands after the container is created.
     // "postCreateCommand": "npm install",
     // Configure tool-specific properties.
