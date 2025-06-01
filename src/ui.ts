@@ -20,15 +20,8 @@ export function renderOAuthSetupPage(): string {
         }
       </script>
     </head>
-    <body class="min-h-screen bg-gradient-to-br from-claude-orange to-todoist-red flex flex-col items-center p-6 font-sans">
-      <!-- Header with logos -->
-      <div class="flex items-center gap-4 mb-8 text-center flex-col sm:flex-row">
-        <div class="w-16 h-16 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
-          <img src="https://github.com/rosenpin/todoist-mcp-server/blob/main/ART/icon.png?raw=true" 
-               alt="Claude" class="w-full h-full object-cover" />
-        </div>
-      </div>
-      
+    <body class="min-h-screen bg-gradient-to-br from-claude-orange to-todoist-red flex flex-col items-center justify-center p-6 font-sans">
+      <!-- Header  -->
       <h1 class="text-white text-3xl sm:text-4xl font-semibold text-center mb-10 drop-shadow-lg">
         Connect Todoist to Claude
       </h1>
@@ -36,7 +29,7 @@ export function renderOAuthSetupPage(): string {
       <!-- Main card -->
       <div class="bg-white rounded-2xl p-8 sm:p-12 max-w-2xl w-full shadow-2xl text-center">
         <h2 class="text-2xl sm:text-3xl font-semibold text-gray-900 mb-4">
-          Secure OAuth Integration
+          Claude + Todoist
         </h2>
         <p class="text-gray-600 mb-10 leading-relaxed">
           Connect your Todoist account to create a personalized MCP server URL for Claude.
@@ -86,15 +79,6 @@ export function renderOAuthSetupPage(): string {
             </li>
           </ol>
         </div>
-        
-        <!-- Privacy note -->
-        <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-green-500 text-left">
-          <p class="text-gray-700 text-sm leading-relaxed">
-            <strong>Privacy & Security:</strong> We use OAuth 2.0 for secure authentication. 
-            Only read/write permissions for your tasks and projects are requested. 
-            Your credentials are never stored on our servers.
-          </p>
-        </div>
       </div>
     </body>
     </html>
@@ -125,7 +109,7 @@ export function renderSuccessPage(baseUrl: string, userId: string): string {
         }
       </script>
     </head>
-    <body class="min-h-screen bg-gradient-to-br from-green-500 to-emerald-600 flex flex-col items-center p-5 font-sans">
+    <body class="min-h-screen bg-gradient-to-br from-green-500 to-emerald-600 flex flex-col items-center justify-center p-5 font-sans">
       <!-- Success icon -->
       <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-5 shadow-2xl">
         <svg class="w-10 h-10 text-green-500" viewBox="0 0 24 24" fill="currentColor">
@@ -198,7 +182,7 @@ export function renderSuccessPage(baseUrl: string, userId: string): string {
                 2
               </div>
               <span class="text-gray-700 leading-relaxed pt-1">
-                <strong>Open Claude</strong> and go to Settings → Integrations → MCP Servers
+                <strong>Open Claude</strong> and go to Profiles -> Settings → Integrations → Add Custom Integration
               </span>
             </li>
             <li class="flex items-start gap-4">
@@ -207,7 +191,7 @@ export function renderSuccessPage(baseUrl: string, userId: string): string {
                 3
               </div>
               <span class="text-gray-700 leading-relaxed pt-1">
-                <strong>Add a new MCP server</strong> and paste your integration URL
+                <strong>Set Integration Name to "Todoist"</strong> and paste your integration URL above as the Integration URL
               </span>
             </li>
             <li class="flex items-start gap-4">
@@ -301,16 +285,16 @@ export function renderSuccessPage(baseUrl: string, userId: string): string {
             </svg>
             Open Claude Integration Settings
           </a>
-          
-          <a href="/" 
-             class="inline-flex items-center justify-center gap-3 bg-gray-100 hover:bg-gray-200 
-                    text-gray-700 px-6 py-3 rounded-xl font-semibold border border-gray-300
-                    transition-all duration-200">
+          <button onclick="deleteAccount()" 
+                  class="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-red-500 to-red-600 
+                         text-white px-6 py-3 rounded-xl font-semibold 
+                         hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
+                  id="deleteBtn">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19,7V4H5V7H19M21,2A2,2 0 0,1 23,4V20A2,2 0 0,1 21,22H3A2,2 0 0,1 1,20V4A2,2 0 0,1 3,2H21M19,9H5V20H19V9Z"/>
+              <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
             </svg>
-            Set Up Another Integration
-          </a>
+            Delete Account
+          </button>
         </div>
       </div>
       
@@ -332,6 +316,41 @@ export function renderSuccessPage(baseUrl: string, userId: string): string {
               copyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
             }, 2000);
           });
+        }
+        
+        function deleteAccount() {
+          if (confirm('Are you sure you want to delete your account? This will permanently remove your integration URL and you will need to reconnect to create a new one.')) {
+            const deleteBtn = document.getElementById('deleteBtn');
+            const originalText = deleteBtn.innerHTML;
+            
+            deleteBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="currentColor"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>Deleting...';
+            deleteBtn.disabled = true;
+            
+            fetch('/delete-account', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ userId: '${userId}' })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                alert('Account deleted successfully. You will now be redirected to the main page.');
+                window.location.href = '/';
+              } else {
+                alert('Failed to delete account: ' + (data.error || 'Unknown error'));
+                deleteBtn.innerHTML = originalText;
+                deleteBtn.disabled = false;
+              }
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Failed to delete account: Network error');
+              deleteBtn.innerHTML = originalText;
+              deleteBtn.disabled = false;
+            });
+          }
         }
       </script>
     </body>

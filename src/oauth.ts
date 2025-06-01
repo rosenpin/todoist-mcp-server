@@ -1,4 +1,4 @@
-import { storeOAuthState, validateAndCleanupState, setToken } from './database.js';
+import { storeOAuthState, validateAndCleanupState, setToken, getUserIdByTodoistId, setUserIdForTodoistId } from './database.js';
 import { renderErrorPage } from './ui.js';
 
 export async function handleOAuthInit(url: URL, env: any): Promise<Response> {
@@ -72,20 +72,41 @@ export async function handleOAuthCallback(url: URL, env: any): Promise<Response>
       throw new Error("No access token received");
     }
 
-    // Validate token by testing API call
-    const testResponse = await fetch('https://api.todoist.com/rest/v2/projects', {
+    // Fetch user profile to get Todoist user ID using API v1
+    const userResponse = await fetch('https://api.todoist.com/api/v1/user', {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     });
 
-    if (!testResponse.ok) {
-      throw new Error("Received invalid access token");
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      console.error(`Todoist user API failed: ${userResponse.status} - ${errorText}`);
+      throw new Error(`Failed to fetch user profile from Todoist: ${userResponse.status} ${errorText}`);
     }
 
-    // Generate unique user ID and store token
-    const userId = crypto.randomUUID();
+    const userData = await userResponse.json() as { id: string, full_name: string };
+    const todoistUserId = userData.id;
+
+    let userId: string;
+    
     if (db) {
-      await setToken(db, userId, accessToken);
-      console.log(`Stored OAuth token for user ${userId} in D1`);
+      // Check if user already exists
+      const existingUserId = await getUserIdByTodoistId(db, todoistUserId);
+      
+      if (existingUserId) {
+        // User exists, update their token and use existing userId
+        userId = existingUserId;
+        await setToken(db, userId, accessToken);
+        console.log(`Updated OAuth token for returning user ${userId} (Todoist ID: ${todoistUserId}) in D1`);
+      } else {
+        // New user, create new userId and store mappings
+        userId = crypto.randomUUID();
+        await setToken(db, userId, accessToken);
+        await setUserIdForTodoistId(db, todoistUserId, userId);
+        console.log(`Stored OAuth token for new user ${userId} (Todoist ID: ${todoistUserId}) in D1`);
+      }
+    } else {
+      // Fallback if no database
+      userId = crypto.randomUUID();
     }
 
     // Redirect to success page

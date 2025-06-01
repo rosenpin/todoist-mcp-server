@@ -4,7 +4,7 @@ main = "src/index.ts"
 compatibility_date = "2024-11-05"
 compatibility_flags = ["nodejs_compat"]
 
-# Enable workers.dev subdomain
+# Enable workers.dev subdomain for development
 workers_dev = true
 
 # D1 Database binding for token storage

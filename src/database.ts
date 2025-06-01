@@ -55,3 +55,43 @@ export async function validateAndCleanupState(db: any, state: string): Promise<b
   // Check if state is not too old (5 minutes max)
   return Date.now() - stateRecord.created_at <= 5 * 60 * 1000;
 }
+
+export async function getUserIdByTodoistId(db: any, todoistUserId: string): Promise<string | null> {
+  await ensureKVStore(db);
+  const result = await db.prepare(
+    "SELECT value FROM kvstore WHERE key = ?"
+  ).bind(`todoist_user_${todoistUserId}`).first();
+  return result?.value || null;
+}
+
+export async function setUserIdForTodoistId(db: any, todoistUserId: string, userId: string): Promise<void> {
+  await ensureKVStore(db);
+  await db.prepare(
+    "INSERT OR REPLACE INTO kvstore (key, value) VALUES (?, ?)"
+  ).bind(`todoist_user_${todoistUserId}`, userId).run();
+}
+
+export async function deleteUser(db: any, userId: string): Promise<void> {
+  await ensureKVStore(db);
+  
+  // First get the token to find the Todoist user ID
+  const token = await getToken(db, userId);
+  if (token) {
+    // Fetch Todoist user ID to clean up the mapping
+    try {
+      const userResponse = await fetch('https://api.todoist.com/api/v1/user', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (userResponse.ok) {
+        const userData = await userResponse.json() as { id: string };
+        // Delete the Todoist user ID mapping
+        await db.prepare("DELETE FROM kvstore WHERE key = ?").bind(`todoist_user_${userData.id}`).run();
+      }
+    } catch (error) {
+      console.error("Error fetching user data for cleanup:", error);
+    }
+  }
+  
+  // Delete the token
+  await db.prepare("DELETE FROM kvstore WHERE key = ?").bind(`todoist_token_${userId}`).run();
+}

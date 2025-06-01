@@ -1,7 +1,7 @@
 import { TodoistMCP } from "./todoist-mcp.js";
 import { handleOAuthInit, handleOAuthCallback, handleOAuthDiscovery } from "./oauth.js";
 import { renderOAuthSetupPage, renderSuccessPage } from "./ui.js";
-import { getToken, setToken } from "./database.js";
+import { getToken, setToken, deleteUser } from "./database.js";
 
 // Export Durable Object class for Cloudflare Workers
 export { TodoistMCP };
@@ -91,6 +91,41 @@ export default {
         return new Response(JSON.stringify({ error: "Internal error" }), {
           status: 500,
           headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    // Delete account endpoint
+    if (url.pathname === "/delete-account" && request.method === "POST") {
+      try {
+        const { userId } = await request.json() as { userId: string };
+        const db = env.DB;
+
+        if (!db) {
+          return new Response(JSON.stringify({ error: "Database not available" }), {
+            status: 500,
+            headers: { 
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*"
+            }
+          });
+        }
+
+        await deleteUser(db, userId);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
+      } catch (error) {
+        console.error("Error deleting user account:", error);
+        return new Response(JSON.stringify({ error: "Failed to delete account" }), {
+          status: 500,
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
         });
       }
     }
