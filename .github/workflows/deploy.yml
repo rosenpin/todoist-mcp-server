@@ -21,4 +21,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run deploy script
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: bash ./deploy.sh
