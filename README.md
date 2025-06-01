@@ -1,9 +1,7 @@
 # Todoist Claude Integration (MCP Server)
 
 <p align="center">
-  <img src="ART/todoist.png" alt="todoist" height="64" style="vertical-align:middle; margin-right: 6px;"/>
-  <span style="font-size:3em; vertical-align:middle; margin: 0 6px;">+</span>
-  <img src="ART/claude.png" alt="claude" height="64" style="vertical-align:middle; margin-left: 6px;"/>
+  <img src="ART/icon.png" alt="icon"/>
 </p>
 
 Connect your Todoist account to Claude and supercharge your productivity with natural language task management!
