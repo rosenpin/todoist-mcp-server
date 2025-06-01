@@ -2,7 +2,20 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodoistClient } from "../todoist-client.js";
 
-export function registerCommentTools(server: McpServer, todoistClient: TodoistClient) {
+export function registerCommentTools(server: McpServer, todoistClient: TodoistClient, subscriptionCheck?: any) {
+  
+  // Helper function to return subscription error
+  const checkSubscription = () => {
+    if (subscriptionCheck && !subscriptionCheck.isActive) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
+        }]
+      };
+    }
+    return null;
+  };
   // Register get_comments tool
   server.tool(
     "get_comments",
@@ -12,13 +25,17 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       projectId: z.string().optional().describe("Project ID to get comments from (provide either taskId or projectId)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing get_comments tool", args);
       
       if (!args.taskId && !args.projectId) {
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: "❌ **Error:** Please provide either taskId or projectId",
             },
           ],
@@ -35,7 +52,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: `💬 **No comments found** for ${args.taskId ? `task ${args.taskId}` : `project ${args.projectId}`}`,
               },
             ],
@@ -49,7 +66,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `💬 **Comments:**\n\n${commentsText}\n\n*Found ${comments.length} comments*`,
             },
           ],
@@ -59,7 +76,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error fetching comments:** ${error}`,
             },
           ],
@@ -78,13 +95,17 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       projectId: z.string().optional().describe("Project ID to comment on (provide either taskId or projectId)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing create_comment tool", args);
       
       if (!args.taskId && !args.projectId) {
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: "❌ **Error:** Please provide either taskId or projectId",
             },
           ],
@@ -100,7 +121,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Comment Added Successfully!**\n\n💬 **Content:** ${comment.content}\n🆔 **ID:** ${comment.id}\n📍 **Target:** ${args.taskId ? `Task ${args.taskId}` : `Project ${args.projectId}`}`,
             },
           ],
@@ -110,7 +131,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error creating comment:** ${error}`,
             },
           ],

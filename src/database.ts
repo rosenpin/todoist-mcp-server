@@ -16,6 +16,16 @@ export async function ensureOAuthStates(db: any): Promise<void> {
   `).run();
 }
 
+export async function ensureSubscriptions(db: any): Promise<void> {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      user_id TEXT PRIMARY KEY,
+      subscription_data TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `).run();
+}
+
 export async function getToken(db: any, userId: string): Promise<string | null> {
   await ensureKVStore(db);
   const result = await db.prepare(

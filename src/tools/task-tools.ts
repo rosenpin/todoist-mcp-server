@@ -2,7 +2,21 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodoistClient } from "../todoist-client.js";
 
-export function registerTaskTools(server: McpServer, todoistClient: TodoistClient) {
+export function registerTaskTools(server: McpServer, todoistClient: TodoistClient, subscriptionCheck?: any) {
+  
+  // Helper function to return subscription error
+  const checkSubscription = () => {
+    if (subscriptionCheck && !subscriptionCheck.isActive) {
+      return {
+        content: [{
+          type: "text" as const,
+          text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
+        }]
+      };
+    }
+    return null;
+  };
+
   // Register get_tasks tool  
   server.tool(
     "get_tasks",
@@ -13,6 +27,10 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       limit: z.number().min(1).max(100).optional().describe("Maximum number of tasks (default: 20, max: 100)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing get_tasks tool", args);
       try {
         const limit = Math.min(args.limit || 20, 100);
@@ -42,7 +60,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: "📝 **No tasks found** matching your criteria.",
               },
             ],
@@ -57,7 +75,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `📝 **Your Tasks:**\n\n${tasksText}\n\n*Found ${tasks.length} tasks${filter ? ` with filter: ${filter}` : ''}*`,
             },
           ],
@@ -67,7 +85,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error fetching tasks:** ${error}`,
             },
           ],
@@ -98,6 +116,10 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       durationUnit: z.enum(["minute", "day"]).optional().describe("Duration unit: 'minute' or 'day' (optional)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing create_task tool", args);
       try {
         const task = await todoistClient.createTask({
@@ -122,7 +144,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Task Created Successfully!**\n\n📋 **Task:** ${task.content}\n🆔 **ID:** ${task.id}\n📁 **Priority:** ${task.priority}${dueString ? `\n📅 **Due:** ${dueString}` : ''}${task.description ? `\n📝 **Description:** ${task.description}` : ''}`,
             },
           ],
@@ -132,7 +154,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error creating task:** ${error}`,
             },
           ],
@@ -154,6 +176,10 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       dueString: z.string().optional().describe("New due date (optional)"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing update_task tool", args);
       try {
         await todoistClient.updateTask(args.taskId, {
@@ -167,7 +193,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Task ${args.taskId} updated successfully!**`,
             },
           ],
@@ -177,7 +203,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error updating task:** ${error}`,
             },
           ],
@@ -194,13 +220,17 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       taskId: z.string().describe("ID of the task to complete"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing complete_task tool", args);
       try {
         await todoistClient.completeTask(args.taskId);
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `✅ **Task ${args.taskId} marked as completed!**`,
             },
           ],
@@ -210,7 +240,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error completing task:** ${error}`,
             },
           ],
@@ -227,13 +257,17 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       taskId: z.string().describe("ID of the task to uncomplete"),
     },
     async (args) => {
+      // Check subscription first
+      const subscriptionError = checkSubscription();
+      if (subscriptionError) return subscriptionError;
+      
       console.log("Executing uncomplete_task tool", args);
       try {
         await todoistClient.uncompleteTask(args.taskId);
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `🔄 **Task ${args.taskId} marked as active again!**`,
             },
           ],
@@ -243,7 +277,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `❌ **Error uncompleting task:** ${error}`,
             },
           ],
