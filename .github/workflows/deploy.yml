@@ -13,14 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/checkout@v4.2.2
+      - name: Publish with Wrangler
+        uses: cloudflare/wrangler-action@v3.14.1
         with:
-          node-version: '20'
-      - name: Install dependencies
-        run: npm ci
-      - name: Run deploy script
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: bash ./deploy.sh
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
