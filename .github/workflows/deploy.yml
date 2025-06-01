@@ -24,11 +24,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build templates
-        run: npm run build-templates
-      
-      - name: Publish with Wrangler
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy with script
+        run: echo "2" | ./scripts/deploy.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
