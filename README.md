@@ -1,5 +1,10 @@
 # Todoist MCP Server
 
+<div align="center">
+
+![Logo](ART/icon.png)
+
+</div>
 A Model Context Protocol (MCP) server that integrates Todoist with Claude AI, enabling direct task management through natural language conversations.
 
 ## Live Service
