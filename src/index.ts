@@ -133,32 +133,113 @@ export default {
       });
     }
 
-    // Setup endpoint - handle token submission
-    if (url.pathname === "/setup" && request.method === "POST") {
-      try {
-        const formData = await request.formData();
-        const token = formData.get("token") as string;
+    // OAuth initiation endpoint
+    if (url.pathname === "/auth") {
+      const state = crypto.randomUUID();
+      const clientId = env.CLIENT_ID;
+      
+      if (!clientId) {
+        return new Response("OAuth not configured - CLIENT_ID missing", { status: 500 });
+      }
 
-        if (!token) {
-          throw new Error("No token provided");
+      // Store state for validation (using current timestamp, could be improved)
+      const db = env.DB;
+      if (db) {
+        await db.prepare(`
+          CREATE TABLE IF NOT EXISTS oauth_states (
+            state TEXT PRIMARY KEY,
+            created_at INTEGER NOT NULL
+          )
+        `).run();
+        
+        await db.prepare(
+          "INSERT INTO oauth_states (state, created_at) VALUES (?, ?)"
+        ).bind(state, Date.now()).run();
+      }
+
+      const authUrl = new URL("https://todoist.com/oauth/authorize");
+      authUrl.searchParams.set("client_id", clientId);
+      authUrl.searchParams.set("scope", "data:read_write");
+      authUrl.searchParams.set("state", state);
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": authUrl.toString(),
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    // OAuth callback endpoint
+    if (url.pathname === "/callback") {
+      try {
+        const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
+        
+        if (!code || !state) {
+          throw new Error("Missing authorization code or state");
+        }
+
+        // Validate state
+        const db = env.DB;
+        if (db) {
+          const stateRecord = await db.prepare(
+            "SELECT created_at FROM oauth_states WHERE state = ?"
+          ).bind(state).first();
+          
+          if (!stateRecord) {
+            throw new Error("Invalid state parameter");
+          }
+          
+          // Clean up used state
+          await db.prepare("DELETE FROM oauth_states WHERE state = ?").bind(state).run();
+          
+          // Check if state is not too old (5 minutes max)
+          if (Date.now() - stateRecord.created_at > 5 * 60 * 1000) {
+            throw new Error("State parameter expired");
+          }
+        }
+
+        // Exchange code for access token
+        const tokenResponse = await fetch("https://todoist.com/oauth/access_token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            client_id: env.CLIENT_ID,
+            client_secret: env.CLIENT_SECRET,
+            code: code,
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          throw new Error(`Token exchange failed: ${errorText}`);
+        }
+
+        const tokenData = await tokenResponse.json() as { access_token: string };
+        const accessToken = tokenData.access_token;
+
+        if (!accessToken) {
+          throw new Error("No access token received");
         }
 
         // Validate token by testing API call
         const testResponse = await fetch('https://api.todoist.com/rest/v2/projects', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
         if (!testResponse.ok) {
-          throw new Error("Invalid Todoist API token");
+          throw new Error("Received invalid access token");
         }
 
         // Generate unique user ID
         const userId = crypto.randomUUID();
 
-        // Store in D1 database
-        const db = env.DB;
+        // Store the access token
         if (db) {
-          // Create table if it doesn't exist
           await db.prepare(`
             CREATE TABLE IF NOT EXISTS kvstore (
               key TEXT PRIMARY KEY,
@@ -166,12 +247,11 @@ export default {
             )
           `).run();
 
-          // Store the token
           await db.prepare(
             "INSERT OR REPLACE INTO kvstore (key, value) VALUES (?, ?)"
-          ).bind(`todoist_token_${userId}`, token).run();
+          ).bind(`todoist_token_${userId}`, accessToken).run();
 
-          console.log(`Stored token for user ${userId} in D1`);
+          console.log(`Stored OAuth token for user ${userId} in D1`);
         }
 
         // Redirect to success page
@@ -184,13 +264,13 @@ export default {
         });
 
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Setup failed";
+        const errorMessage = error instanceof Error ? error.message : "OAuth failed";
         return new Response(`
           <!DOCTYPE html>
           <html>
-          <head><title>Setup Error</title></head>
+          <head><title>OAuth Error</title></head>
           <body>
-            <h1>❌ Setup Error</h1>
+            <h1>❌ OAuth Error</h1>
             <p><strong>Error:</strong> ${errorMessage}</p>
             <p><a href="/">← Try again</a></p>
           </body>
@@ -262,34 +342,32 @@ export default {
         });
       }
 
-      // Show auth form
+      // Show OAuth auth page
       return new Response(`
         <!DOCTYPE html>
         <html>
         <head><title>Todoist MCP Server - Setup</title></head>
         <body>
           <h1>🚀 Todoist MCP Server Setup</h1>
-          <p>Configure your Todoist API token to get a personalized integration URL for Claude.</p>
+          <p>Connect your Todoist account to get a personalized integration URL for Claude.</p>
           
-          <form action="/setup" method="POST" style="max-width: 500px;">
-            <h2>📋 Setup Your Token:</h2>
+          <div style="max-width: 500px;">
+            <h2>🔐 Secure OAuth Setup:</h2>
+            <p>We'll securely connect to your Todoist account using OAuth 2.0 - no need to handle API tokens manually!</p>
+            
+            <a href="/auth" style="display: inline-block; padding: 15px 30px; background: #e44332; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              🔗 Connect with Todoist
+            </a>
+            
+            <h3>📝 What happens next:</h3>
             <ol>
-              <li>Go to <a href="https://todoist.com/prefs/integrations" target="_blank">Todoist Settings → Integrations</a></li>
-              <li>Copy your API token</li>
-              <li>Paste it below:</li>
+              <li>You'll be redirected to Todoist to authorize access</li>
+              <li>We'll create your personalized MCP integration URL</li>
+              <li>Add the URL to Claude to start using Todoist tools!</li>
             </ol>
-            
-            <label for="token"><strong>Todoist API Token:</strong></label><br>
-            <input type="text" id="token" name="token" required 
-                   style="width: 100%; padding: 10px; margin: 10px 0; font-family: monospace;"
-                   placeholder="Enter your Todoist API token..."><br>
-            
-            <button type="submit" style="padding: 10px 20px; background: #e44332; color: white; border: none; cursor: pointer;">
-              Create Integration URL
-            </button>
-          </form>
+          </div>
           
-          <p><strong>Privacy:</strong> Your token is stored securely and only used to access your Todoist data.</p>
+          <p><strong>Privacy:</strong> We only request the minimum permissions needed and your data stays secure.</p>
         </body>
         </html>
       `, {
