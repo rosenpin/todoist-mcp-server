@@ -2,20 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodoistClient } from "../todoist-client.js";
 
-export function registerCommentTools(server: McpServer, todoistClient: TodoistClient, subscriptionCheck?: any) {
-  
-  // Helper function to return subscription error
-  const checkSubscription = () => {
-    if (subscriptionCheck && !subscriptionCheck.isActive) {
-      return {
-        content: [{
-          type: "text" as const,
-          text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
-        }]
-      };
-    }
-    return null;
-  };
+export function registerCommentTools(server: McpServer, todoistClient: TodoistClient) {
   // Register get_comments tool
   server.tool(
     "get_comments",
@@ -25,10 +12,6 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       projectId: z.string().optional().describe("Project ID to get comments from (provide either taskId or projectId)"),
     },
     async (args) => {
-      // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing get_comments tool", args);
       
       if (!args.taskId && !args.projectId) {
@@ -95,10 +78,6 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       projectId: z.string().optional().describe("Project ID to comment on (provide either taskId or projectId)"),
     },
     async (args) => {
-      // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing create_comment tool", args);
       
       if (!args.taskId && !args.projectId) {

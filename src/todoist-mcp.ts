@@ -8,7 +8,6 @@ import { registerSectionTools } from "./tools/section-tools.js";
 import { registerLabelTools } from "./tools/label-tools.js";
 import { registerCommentTools } from "./tools/comment-tools.js";
 import { registerSetupTool } from "./tools/setup-tool.js";
-import { checkUserSubscription, createSubscriptionError } from "./subscription-utils.js";
 
 // Define the MCP agent for Todoist
 export class TodoistMCP extends McpAgent {
@@ -50,17 +49,14 @@ export class TodoistMCP extends McpAgent {
       return;
     }
 
-    // Check subscription status for use in tools
-    const subscriptionCheck = await checkUserSubscription(userId, requestUrl, this.env);
-
     const todoistClient = new TodoistClient(todoistToken);
 
-    // Register all tool categories with subscription check
-    registerProjectTools(this.server, todoistClient, subscriptionCheck);
-    registerTaskTools(this.server, todoistClient, subscriptionCheck);
-    registerSectionTools(this.server, todoistClient, subscriptionCheck);
-    registerLabelTools(this.server, todoistClient, subscriptionCheck);
-    registerCommentTools(this.server, todoistClient, subscriptionCheck);
+    // Register all tool categories
+    registerProjectTools(this.server, todoistClient);
+    registerTaskTools(this.server, todoistClient);
+    registerSectionTools(this.server, todoistClient);
+    registerLabelTools(this.server, todoistClient);
+    registerCommentTools(this.server, todoistClient);
 
     console.log("TodoistMCP server initialized with tools:", [
       "list_projects", "get_tasks", "create_task", "update_task", "complete_task", "uncomplete_task",

@@ -2,20 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodoistClient } from "../todoist-client.js";
 
-export function registerTaskTools(server: McpServer, todoistClient: TodoistClient, subscriptionCheck?: any) {
-  
-  // Helper function to return subscription error
-  const checkSubscription = () => {
-    if (subscriptionCheck && !subscriptionCheck.isActive) {
-      return {
-        content: [{
-          type: "text" as const,
-          text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
-        }]
-      };
-    }
-    return null;
-  };
+export function registerTaskTools(server: McpServer, todoistClient: TodoistClient) {
 
   // Register get_tasks tool  
   server.tool(
@@ -27,10 +14,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       limit: z.number().min(1).max(100).optional().describe("Maximum number of tasks (default: 20, max: 100)"),
     },
     async (args) => {
-      // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing get_tasks tool", args);
       try {
         const limit = Math.min(args.limit || 20, 100);
@@ -117,9 +100,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
     },
     async (args) => {
       // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing create_task tool", args);
       try {
         const task = await todoistClient.createTask({
@@ -177,9 +157,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
     },
     async (args) => {
       // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing update_task tool", args);
       try {
         await todoistClient.updateTask(args.taskId, {
@@ -221,9 +198,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
     },
     async (args) => {
       // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing complete_task tool", args);
       try {
         await todoistClient.completeTask(args.taskId);
@@ -258,9 +232,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
     },
     async (args) => {
       // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing uncomplete_task tool", args);
       try {
         await todoistClient.uncompleteTask(args.taskId);

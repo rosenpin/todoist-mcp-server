@@ -9,7 +9,8 @@
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/devcontainers-extra/features/curl-apt-get:1": {},
         "ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {},
-        "ghcr.io/joedmck/devcontainer-features/wrangler:1": {}
+        "ghcr.io/joedmck/devcontainer-features/wrangler:1": {},
+        "ghcr.io/anthropics/devcontainer-features/claude-code:1.0.5": {}
     },
     "mounts": [
         "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
@@ -50,7 +51,10 @@
         }
     },
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    "forwardPorts": [8000, 8787]
+    "forwardPorts": [
+        8000,
+        8787
+    ]
     // Use 'postCreateCommand' to run commands after the container is created.
     // "postCreateCommand": "npm install",
     // Configure tool-specific properties.

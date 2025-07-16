@@ -2,30 +2,13 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { TodoistClient } from "../todoist-client.js";
 
-export function registerLabelTools(server: McpServer, todoistClient: TodoistClient, subscriptionCheck?: any) {
-  
-  // Helper function to return subscription error
-  const checkSubscription = () => {
-    if (subscriptionCheck && !subscriptionCheck.isActive) {
-      return {
-        content: [{
-          type: "text" as const,
-          text: subscriptionCheck.message || "🔒 **Subscription Required**\n\nPlease visit our website to subscribe."
-        }]
-      };
-    }
-    return null;
-  };
+export function registerLabelTools(server: McpServer, todoistClient: TodoistClient) {
   // Register get_labels tool
   server.tool(
     "get_labels",
     "Get all labels",
     {},
     async () => {
-      // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing get_labels tool");
       try {
         const labels = await todoistClient.getLabels();
@@ -78,10 +61,6 @@ export function registerLabelTools(server: McpServer, todoistClient: TodoistClie
       isFavorite: z.boolean().optional().describe("Mark label as favorite (optional)"),
     },
     async (args) => {
-      // Check subscription first
-      const subscriptionError = checkSubscription();
-      if (subscriptionError) return subscriptionError;
-      
       console.log("Executing create_label tool", args);
       try {
         const label = await todoistClient.createLabel({

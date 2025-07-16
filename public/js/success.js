@@ -20,44 +20,6 @@ function copyToClipboard() {
   });
 }
 
-// Create subscription function
-function createSubscription() {
-  const subscribeBtn = document.getElementById('subscribeBtn');
-  const originalText = subscribeBtn.innerHTML;
-  const userId = window.todoistMcpData?.userId;
-  
-  if (!userId) {
-    alert('User ID not found. Please refresh the page.');
-    return;
-  }
-  
-  subscribeBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="currentColor"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>Creating...';
-  subscribeBtn.disabled = true;
-  
-  fetch('/create-subscription', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ userId })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.paymentUrl) {
-      window.location.href = data.paymentUrl;
-    } else {
-      alert('Failed to create subscription: ' + (data.error || 'Unknown error'));
-      subscribeBtn.innerHTML = originalText;
-      subscribeBtn.disabled = false;
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('Failed to create subscription: Network error');
-    subscribeBtn.innerHTML = originalText;
-    subscribeBtn.disabled = false;
-  });
-}
 
 // Delete account function
 function deleteAccount() {
@@ -104,5 +66,4 @@ function deleteAccount() {
 
 // Make functions available globally
 window.copyToClipboard = copyToClipboard;
-window.createSubscription = createSubscription;
 window.deleteAccount = deleteAccount;

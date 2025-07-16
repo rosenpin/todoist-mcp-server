@@ -21,16 +21,9 @@ class_name = "TodoistMCP"
 tag = "v1"
 new_sqlite_classes = ["TodoistMCP"]
 
-# Environment variables for subscription system
-[vars]
-# Set to "true" to enable subscription checking (default: disabled)
-SUBSCRIPTION_ENABLED = "false"
-
 # Preview environment configuration
 [env.preview]
 name = "todoist-mcp-server-preview"
-# Inherit vars from main environment
-vars = { SUBSCRIPTION_ENABLED = "true" }
 
 # Use same D1 database for now (you can create a separate one via Cloudflare Dashboard)
 [[env.preview.d1_databases]]
