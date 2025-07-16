@@ -1,11 +1,11 @@
-# Todoist MCP Server
+# Todoist MCP Connector
 
 <div align="center">
 
 ![Logo](ART/icon.png)
 
 </div>
-A Model Context Protocol (MCP) server that integrates Todoist with Claude AI, enabling direct task management through natural language conversations.
+An MCP connector that connects Todoist to Claude, enabling direct task management through natural language conversations using the Model Context Protocol.
 
 ## Live Service
 
@@ -13,7 +13,7 @@ A Model Context Protocol (MCP) server that integrates Todoist with Claude AI, en
 
 ## What is this?
 
-This server allows Claude to interact with your Todoist account, giving you the ability to:
+This MCP connector allows Claude to connect to your Todoist account, giving you the ability to:
 
 - Create, read, update, and complete tasks
 - Manage projects and sections
@@ -25,17 +25,19 @@ Instead of switching between Claude and Todoist, you can manage your tasks direc
 ## Quick Start
 
 1. **Visit [todoistmcp.rosenpin.io](https://todoistmcp.rosenpin.io)**
-2. **Connect your Todoist account** via OAuth
-3. **Copy your personal MCP integration URL**
-4. **Add it to Claude:**
-   - Go to Claude Settings � Integrations
+2. **Connect your Todoist account** via OAuth authentication
+3. **Copy your personal connector URL**
+4. **Connect to Claude:**
+   - Go to Claude Settings → Integrations
    - Add Custom Integration
    - Name: "Todoist"
-   - URL: Your personal integration URL
+   - URL: Your personal connector URL
 
-## Available Tools
+## Tools Available to Claude
 
-### Tasks
+This connector gives Claude access to the following Todoist tools:
+
+### Task Management
 
 - `get_tasks` - Retrieve tasks with filtering options
 - `create_task` - Create new tasks with due dates, priorities, labels
@@ -43,7 +45,7 @@ Instead of switching between Claude and Todoist, you can manage your tasks direc
 - `complete_task` - Mark tasks as done
 - `uncomplete_task` - Reopen completed tasks
 
-### Projects & Organization
+### Project Organization
 
 - `list_projects` - Get all your projects
 - `create_project` - Create new projects
@@ -59,9 +61,9 @@ Instead of switching between Claude and Todoist, you can manage your tasks direc
 - `get_labels` - List all labels
 - `create_label` - Create new labels
 
-## API Reference
+## Technical Details
 
-This server implements the [Model Context Protocol](https://modelcontextprotocol.io) specification. Each tool returns structured data that Claude can understand and act upon.
+This connector implements the [Model Context Protocol](https://modelcontextprotocol.io) specification. Each tool returns structured data that Claude can understand and act upon.
 
 ## Support
 
