@@ -189,14 +189,37 @@ export default {
 
     console.log("Request analysis:", { isStreamMethod, isMessage });
 
-    // Set request URL in context for agents library
+    if (isStreamMethod || isMessage) {
+      // CRITICAL: Use user_id as sessionId to ensure one Durable Object per user
+      // instead of creating a new DO for each connection/reconnection.
+      // This prevents DO storage bloat from thousands of orphaned session DOs.
+      const userId = url.searchParams.get("user_id");
+      const modifiedUrl = new URL(request.url);
+
+      if (userId && !modifiedUrl.searchParams.has("sessionId")) {
+        modifiedUrl.searchParams.set("sessionId", userId);
+      }
+
+      // Create a new request with the modified URL
+      const modifiedRequest = new Request(modifiedUrl.toString(), {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+        // @ts-ignore - duplex is needed for streaming bodies in Node.js
+        duplex: "half",
+      });
+
+      // Set request URL in context for agents library
+      ctx.props = ctx.props || {};
+      ctx.props.requestUrl = modifiedUrl.toString();
+
+      console.log("Handling MCP request via agents library", { userId, sessionId: modifiedUrl.searchParams.get("sessionId") });
+      return await TodoistMCP.serveSSE("/*").fetch(modifiedRequest, env, ctx);
+    }
+
+    // Set request URL in context for agents library (for non-MCP requests)
     ctx.props = ctx.props || {};
     ctx.props.requestUrl = request.url;
-
-    if (isStreamMethod || isMessage) {
-      console.log("Handling MCP request via agents library");
-      return await TodoistMCP.serveSSE("/*").fetch(request, env, ctx);
-    }
 
     // Default 404 response
     return new Response("Not Found", {
