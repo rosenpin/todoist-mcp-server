@@ -10,7 +10,8 @@ import { registerCommentTools } from "./tools/comment-tools.js";
 import { registerSetupTool } from "./tools/setup-tool.js";
 
 // Define the MCP agent for Todoist
-export class TodoistMCP extends McpAgent {
+// v2: Fresh DO namespace after clearing 5GB of orphaned storage
+export class TodoistMCPv2 extends McpAgent {
   server = new McpServer({
     name: "TodoistMCP",
     version: "1.0.0",

@@ -15,11 +15,21 @@ database_id = "04870dd1-25c7-42f5-ab30-5f97b920ced2"
 
 [[durable_objects.bindings]]
 name = "MCP_OBJECT"
-class_name = "TodoistMCP"
+class_name = "TodoistMCPv2"
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TodoistMCP"]
+
+# v2: New class to reset DO namespace (old class storage will be orphaned but not accessed)
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["TodoistMCPv2"]
+
+# v3: Delete old class to free up 5GB of orphaned storage
+[[migrations]]
+tag = "v3"
+deleted_classes = ["TodoistMCP"]
 
 # Preview environment configuration
 [env.preview]
@@ -34,7 +44,7 @@ database_id = "04870dd1-25c7-42f5-ab30-5f97b920ced2"
 # Use separate Durable Object namespace for preview
 [[env.preview.durable_objects.bindings]]
 name = "MCP_OBJECT"
-class_name = "TodoistMCP"
+class_name = "TodoistMCPv2"
 # This creates a separate namespace for preview
 
 # [[routes]]

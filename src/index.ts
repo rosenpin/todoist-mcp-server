@@ -1,10 +1,10 @@
 import { deleteUser, getToken, setToken } from "./database.js";
 import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
-import { TodoistMCP } from "./todoist-mcp.js";
+import { TodoistMCPv2 } from "./todoist-mcp.js";
 import { renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
 
 // Export Durable Object class for Cloudflare Workers
-export { TodoistMCP };
+export { TodoistMCPv2 };
 
 // Cloudflare Worker export
 export default {
@@ -214,7 +214,7 @@ export default {
       ctx.props.requestUrl = modifiedUrl.toString();
 
       console.log("Handling MCP request via agents library", { userId, sessionId: modifiedUrl.searchParams.get("sessionId") });
-      return await TodoistMCP.serveSSE("/*").fetch(modifiedRequest, env, ctx);
+      return await TodoistMCPv2.serveSSE("/*").fetch(modifiedRequest, env, ctx);
     }
 
     // Set request URL in context for agents library (for non-MCP requests)
