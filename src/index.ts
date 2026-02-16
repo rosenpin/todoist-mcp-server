@@ -1,10 +1,10 @@
 import { deleteUser, getToken, setToken } from "./database.js";
 import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
-import { TodoistMCPv2 } from "./todoist-mcp.js";
+import { TodoistMCPv3 } from "./todoist-mcp.js";
 import { renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
 
 // Export Durable Object class for Cloudflare Workers
-export { TodoistMCPv2 };
+export { TodoistMCPv3 };
 
 // Cloudflare Worker export
 export default {
@@ -190,13 +190,25 @@ export default {
     console.log("Request analysis:", { isStreamMethod, isMessage });
 
     if (isStreamMethod || isMessage) {
-      // CRITICAL: Use user_id as sessionId to ensure one Durable Object per user
-      // instead of creating a new DO for each connection/reconnection.
-      // This prevents DO storage bloat from thousands of orphaned session DOs.
-      const userId = url.searchParams.get("user_id");
-      const modifiedUrl = new URL(request.url);
+      // Require user_id to prevent orphaned Durable Objects from being created
+      // for every connection (bots, scanners, misconfigured clients).
+      // Without this, the agents library creates a new DO per connection,
+      // which bloats storage toward the 2GB free tier limit.
+      const userId = url.searchParams.get("user_id") || url.searchParams.get("sessionId");
+      if (!userId) {
+        return new Response(JSON.stringify({
+          error: "Missing user_id parameter. Connect via the setup page to get your MCP URL.",
+        }), {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
 
-      if (userId && !modifiedUrl.searchParams.has("sessionId")) {
+      const modifiedUrl = new URL(request.url);
+      if (!modifiedUrl.searchParams.has("sessionId")) {
         modifiedUrl.searchParams.set("sessionId", userId);
       }
 
@@ -214,7 +226,7 @@ export default {
       ctx.props.requestUrl = modifiedUrl.toString();
 
       console.log("Handling MCP request via agents library", { userId, sessionId: modifiedUrl.searchParams.get("sessionId") });
-      return await TodoistMCPv2.serveSSE("/*").fetch(modifiedRequest, env, ctx);
+      return await TodoistMCPv3.serveSSE("/*").fetch(modifiedRequest, env, ctx);
     }
 
     // Set request URL in context for agents library (for non-MCP requests)
