@@ -17,7 +17,11 @@ database_id = "04870dd1-25c7-42f5-ab30-5f97b920ced2"
 name = "MCP_OBJECT"
 class_name = "TodoistMCPv3"
 
-# Keep v2 binding alive so we can send cleanup requests to old DOs
+# Keep old class bindings alive for cleanup
+[[durable_objects.bindings]]
+name = "CLEANUP_V1"
+class_name = "TodoistMCP"
+
 [[durable_objects.bindings]]
 name = "CLEANUP_V2"
 class_name = "TodoistMCPv2"
@@ -31,15 +35,20 @@ new_sqlite_classes = ["TodoistMCP"]
 tag = "v2"
 new_sqlite_classes = ["TodoistMCPv2"]
 
-# v3: Delete old class (applied to production Jan 21)
+# v3: Previously deleted TodoistMCP (applied to production Jan 21)
 [[migrations]]
 tag = "v3"
 deleted_classes = ["TodoistMCP"]
 
-# v4: Create v3 class (no deleted_classes - that blocks deploys and doesn't free storage)
+# v4: Create v3 class
 [[migrations]]
 tag = "v4"
 new_sqlite_classes = ["TodoistMCPv3"]
+
+# v5: Re-add TodoistMCP so we can access old DOs for cleanup
+[[migrations]]
+tag = "v5"
+new_sqlite_classes = ["TodoistMCP"]
 
 # Preview environment configuration
 [env.preview]
@@ -55,6 +64,10 @@ database_id = "04870dd1-25c7-42f5-ab30-5f97b920ced2"
 [[env.preview.durable_objects.bindings]]
 name = "MCP_OBJECT"
 class_name = "TodoistMCPv3"
+
+[[env.preview.durable_objects.bindings]]
+name = "CLEANUP_V1"
+class_name = "TodoistMCP"
 
 [[env.preview.durable_objects.bindings]]
 name = "CLEANUP_V2"
