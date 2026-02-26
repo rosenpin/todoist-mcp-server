@@ -17,6 +17,11 @@ database_id = "04870dd1-25c7-42f5-ab30-5f97b920ced2"
 name = "MCP_OBJECT"
 class_name = "TodoistMCPv3"
 
+# Keep v2 binding alive so we can send cleanup requests to old DOs
+[[durable_objects.bindings]]
+name = "CLEANUP_V2"
+class_name = "TodoistMCPv2"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TodoistMCP"]
@@ -26,16 +31,15 @@ new_sqlite_classes = ["TodoistMCP"]
 tag = "v2"
 new_sqlite_classes = ["TodoistMCPv2"]
 
-# v3: Delete old class to free up 5GB of orphaned storage
+# v3: Delete old class (applied to production Jan 21)
 [[migrations]]
 tag = "v3"
 deleted_classes = ["TodoistMCP"]
 
-# v4: New class to clear accumulated v2 storage + delete v2
+# v4: Create v3 class (no deleted_classes - that blocks deploys and doesn't free storage)
 [[migrations]]
 tag = "v4"
 new_sqlite_classes = ["TodoistMCPv3"]
-deleted_classes = ["TodoistMCPv2"]
 
 # Preview environment configuration
 [env.preview]
@@ -51,7 +55,10 @@ database_id = "04870dd1-25c7-42f5-ab30-5f97b920ced2"
 [[env.preview.durable_objects.bindings]]
 name = "MCP_OBJECT"
 class_name = "TodoistMCPv3"
-# This creates a separate namespace for preview
+
+[[env.preview.durable_objects.bindings]]
+name = "CLEANUP_V2"
+class_name = "TodoistMCPv2"
 
 # [[routes]]
 # pattern = "todoist.mcp.rosenpin.io/*"

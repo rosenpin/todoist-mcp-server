@@ -1,10 +1,11 @@
 import { deleteUser, getToken, setToken } from "./database.js";
 import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
 import { TodoistMCPv3 } from "./todoist-mcp.js";
+import { TodoistMCPv2 } from "./cleanup-do.js";
 import { renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
 
-// Export Durable Object class for Cloudflare Workers
-export { TodoistMCPv3 };
+// Export Durable Object classes for Cloudflare Workers
+export { TodoistMCPv3, TodoistMCPv2 };
 
 // Cloudflare Worker export
 export default {
@@ -130,6 +131,89 @@ export default {
       }
     }
 
+
+    // Admin cleanup endpoint: wipes storage from old v2 Durable Objects
+    // Usage: POST /admin/cleanup with Authorization header containing Cloudflare API token
+    if (url.pathname === "/admin/cleanup" && request.method === "POST") {
+      const authToken = request.headers.get("Authorization")?.replace("Bearer ", "");
+      if (!authToken) {
+        return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      try {
+        const accountId = "72dbb7479fb1fd924dc864a342dd0718";
+
+        // List all DO namespaces to find the v2 one
+        const nsResp = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/durable_objects/namespaces`,
+          { headers: { Authorization: `Bearer ${authToken}` } }
+        );
+        const nsData = await nsResp.json() as any;
+        if (!nsData.success) {
+          return new Response(JSON.stringify({ error: "Failed to list namespaces", details: nsData.errors }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const v2Namespace = nsData.result?.find((ns: any) => ns.class === "TodoistMCPv2");
+        if (!v2Namespace) {
+          return new Response(JSON.stringify({ error: "TodoistMCPv2 namespace not found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        // List all objects in the v2 namespace
+        let allObjects: any[] = [];
+        let cursor: string | undefined;
+        do {
+          const params = new URLSearchParams();
+          if (cursor) params.set("cursor", cursor);
+          const objResp = await fetch(
+            `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/durable_objects/namespaces/${v2Namespace.id}/objects?${params}`,
+            { headers: { Authorization: `Bearer ${authToken}` } }
+          );
+          const objData = await objResp.json() as any;
+          if (!objData.success) break;
+          allObjects = allObjects.concat(objData.result || []);
+          cursor = objData.result_info?.cursor;
+        } while (cursor);
+
+        // Send cleanup request to each v2 DO via the CLEANUP_V2 binding
+        const cleanupBinding = env.CLEANUP_V2;
+        let cleaned = 0;
+        let errors = 0;
+
+        for (const obj of allObjects) {
+          try {
+            const id = cleanupBinding.idFromString(obj.id);
+            const stub = cleanupBinding.get(id);
+            await stub.fetch(new Request("https://cleanup/delete", { method: "POST" }));
+            cleaned++;
+          } catch (e) {
+            errors++;
+          }
+        }
+
+        return new Response(JSON.stringify({
+          total: allObjects.length,
+          cleaned,
+          errors,
+        }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (error) {
+        console.error("Cleanup error:", error);
+        return new Response(JSON.stringify({ error: "Cleanup failed", message: String(error) }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // OAuth endpoints
     if (url.pathname === "/.well-known/oauth-authorization-server") {
