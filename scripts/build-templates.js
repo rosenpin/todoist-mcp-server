@@ -5,7 +5,9 @@ const path = require('path');
 
 const pub = (p) => fs.readFileSync(path.join(__dirname, '../public', p), 'utf8');
 const styles = pub('css/styles.css');
-const page = (name) => pub(`html/${name}.html`).replace('/*{{STYLES}}*/', () => styles);
+const page = (name) => pub(`html/${name}.html`)
+  .replace('/*{{STYLES}}*/', () => styles)
+  .replace(/<!--\{\{include:([\w-]+)\}\}-->\n?/g, (_, part) => pub(`html/_${part}.html`));
 
 const templates = {
   oauthSetup: page('oauth-setup'),
