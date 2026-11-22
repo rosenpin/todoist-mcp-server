@@ -22,7 +22,8 @@ export class TodoistMCPv3 extends McpAgent<{ DB: D1Database }> {
 
     const requestUrl = this.props.requestUrl as string;
     const url = new URL(requestUrl);
-    const userId = url.searchParams.get("user_id") || url.searchParams.get("sessionId") || "default";
+    // OAuth clients (/mcp) carry userId in props; ?user_id= URLs carry it in the query
+    const userId = (this.props.userId as string) || url.searchParams.get("user_id") || url.searchParams.get("sessionId") || "default";
     const db = this.env.DB;
 
     const todoistToken = await getToken(db, userId);

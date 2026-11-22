@@ -76,3 +76,8 @@ class_name = "TodoistMCPv2"
 # [[routes]]
 # pattern = "todoist.mcp.rosenpin.io/*"
 # zone_name = "rosenpin.io"
+
+# OAuth 2.1 grants/clients for MCP clients that require OAuth (Gemini)
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "6c13f166be514392b8b7a90a76dc4b19"

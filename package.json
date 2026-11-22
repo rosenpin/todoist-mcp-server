@@ -10,6 +10,7 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.4",
     "@doist/todoist-api-typescript": "^4.0.4",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "agents": "^0.0.94",

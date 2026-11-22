@@ -1,5 +1,6 @@
 import { deleteUser, getToken } from "./database.js";
-import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
+import OAuthProvider from "@cloudflare/workers-oauth-provider";
+import { handleAuthorize, handleOAuthCallback, handleOAuthInit } from "./oauth.js";
 import { TodoistMCPv3 } from "./todoist-mcp.js";
 import { TodoistMCPv2, TodoistMCP } from "./cleanup-do.js";
 import { favicon, renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
@@ -7,8 +8,8 @@ import { favicon, renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js
 // Export Durable Object classes for Cloudflare Workers
 export { TodoistMCPv3, TodoistMCPv2, TodoistMCP };
 
-// Cloudflare Worker export
-export default {
+// Existing routes: setup UI, ?user_id= MCP URLs (SSE + Streamable HTTP), admin
+const app = {
   async fetch(request: Request, env: any, ctx: any): Promise<Response> {
     const url = new URL(request.url);
 
@@ -169,31 +170,17 @@ export default {
       }
     }
 
-    // OAuth endpoints
-    if (url.pathname === "/.well-known/oauth-authorization-server") {
-      return handleOAuthDiscovery(url);
-    }
-
+    // OAuth endpoints (discovery, /token and /register are served by OAuthProvider)
     if (url.pathname === "/auth") {
       return await handleOAuthInit(url, env);
     }
 
-    if (url.pathname === "/callback") {
-      return await handleOAuthCallback(url, env);
+    if (url.pathname === "/authorize") {
+      return await handleAuthorize(request, env);
     }
 
-    // Registration endpoint
-    if (url.pathname === "/register" && request.method === "POST") {
-      return new Response(JSON.stringify({
-        client_id: "todoist-mcp-client",
-        registration_access_token: "demo-token",
-        client_secret: "demo-secret",
-      }), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+    if (url.pathname === "/callback") {
+      return await handleOAuthCallback(request, env);
     }
 
     // Root endpoint - show UI for non-SSE requests
@@ -294,3 +281,26 @@ export default {
     });
   },
 };
+
+// ponytail: canonical origin is hardcoded; move to config if the worker ever gets a custom domain
+const ORIGIN = "https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev";
+
+// /mcp: OAuth-protected Streamable HTTP endpoint for clients that require OAuth (Gemini). Everything else -> app.
+export default new OAuthProvider({
+  apiRoute: "/mcp",
+  apiHandler: {
+    fetch(request: Request, env: any, ctx: any) {
+      ctx.props = { ...ctx.props, requestUrl: request.url };
+      return TodoistMCPv3.serve("/mcp").fetch(request, env, ctx);
+    },
+  },
+  defaultHandler: app as any,
+  authorizeEndpoint: "/authorize",
+  tokenEndpoint: "/token",
+  clientRegistrationEndpoint: "/register",
+  resourceMetadata: {
+    resource: `${ORIGIN}/mcp`,
+    authorization_servers: [ORIGIN],
+    resource_name: "Todoist MCP",
+  },
+});
