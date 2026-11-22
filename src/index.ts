@@ -321,25 +321,39 @@ async function closeWhenAnswered(request: Request, responsePromise: Promise<Resp
   return new Response(closer.readable, response);
 }
 
-// ponytail: canonical origin is hardcoded; move to config if the worker ever gets a custom domain
-const ORIGIN = "https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev";
+// Public origins this worker answers on; OAuth resource metadata must name the exact origin a client used.
+// ponytail: hardcoded list, add new custom domains here
+const ORIGINS = [
+  "https://todoistmcp.rosenpin.io",
+  "https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev",
+];
 
-// /mcp: OAuth-protected Streamable HTTP endpoint for clients that require OAuth (Gemini). Everything else -> app.
-export default new OAuthProvider({
-  apiRoute: "/mcp",
-  apiHandler: {
-    fetch(request: Request, env: any, ctx: any) {
-      ctx.props = { ...ctx.props, requestUrl: request.url };
-      return closeWhenAnswered(request, TodoistMCPv3.serve("/mcp").fetch(request.clone(), env, ctx));
-    },
+const mcpApiHandler = {
+  fetch(request: Request, env: any, ctx: any) {
+    ctx.props = { ...ctx.props, requestUrl: request.url };
+    return closeWhenAnswered(request, TodoistMCPv3.serve("/mcp").fetch(request.clone(), env, ctx));
   },
+};
+
+// /mcp: OAuth-protected Streamable HTTP endpoint (Gemini, Claude, ChatGPT). Everything else -> app.
+// One provider per origin: the issuer follows the request origin, the protected resource is fixed per provider.
+const providers = new Map(ORIGINS.map((origin) => [new URL(origin).host, new OAuthProvider({
+  apiRoute: "/mcp",
+  apiHandler: mcpApiHandler,
   defaultHandler: app as any,
   authorizeEndpoint: "/authorize",
   tokenEndpoint: "/token",
   clientRegistrationEndpoint: "/register",
   resourceMetadata: {
-    resource: `${ORIGIN}/mcp`,
-    authorization_servers: [ORIGIN],
+    resource: `${origin}/mcp`,
+    authorization_servers: [origin],
     resource_name: "Todoist MCP",
   },
-});
+})]));
+
+export default {
+  fetch(request: Request, env: any, ctx: any) {
+    const provider = providers.get(new URL(request.url).host) ?? providers.get(new URL(ORIGINS[0]).host)!;
+    return provider.fetch(request, env, ctx);
+  },
+};
