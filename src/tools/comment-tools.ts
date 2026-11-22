@@ -16,6 +16,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       
       if (!args.taskId && !args.projectId) {
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -57,6 +58,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error fetching comments:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -82,6 +84,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       
       if (!args.taskId && !args.projectId) {
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -108,6 +111,7 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error creating comment:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,

@@ -15,21 +15,12 @@ export class TodoistClient {
   }
 
   // Task methods
-  async getTasks(filter?: string): Promise<Task[]> {
-    if (filter) {
-      // Use the filter endpoint for queries
-      const response = await this.api.getTasksByFilter({
-        query: filter,
-        limit: 200
-      });
-      return response.results;
-    } else {
-      // Get all tasks
-      const response = await this.api.getTasks({
-        limit: 200
-      });
-      return response.results;
+  async getTasks({ projectId, filter }: { projectId?: string; filter?: string } = {}): Promise<Task[]> {
+    if (!filter) {
+      return (await this.api.getTasks({ projectId, limit: 200 })).results;
     }
+    const { results } = await this.api.getTasksByFilter({ query: filter, limit: 200 });
+    return projectId ? results.filter((t) => t.projectId === projectId) : results;
   }
 
   async getTask(taskId: string): Promise<Task> {

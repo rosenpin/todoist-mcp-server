@@ -41,6 +41,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error fetching sections:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -80,6 +81,7 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error creating section:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,

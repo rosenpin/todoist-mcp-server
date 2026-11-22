@@ -31,6 +31,7 @@ export function registerSetupTool(
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         return {
+          isError: true,
           content: [
             {
               type: "text",

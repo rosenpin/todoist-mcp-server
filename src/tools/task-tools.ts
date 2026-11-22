@@ -18,23 +18,8 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       try {
         const limit = Math.min(args.limit || 20, 100);
 
-        // Build filter string
-        const filterParts: string[] = [];
-
-        if (args.projectId) {
-          const projects = await todoistClient.getProjects();
-          const project = projects.find(p => p.id === args.projectId);
-          if (project) {
-            filterParts.push(`#${project.name}`);
-          }
-        }
-
-        if (args.filterQuery) {
-          filterParts.push(args.filterQuery);
-        }
-
-        const filter = filterParts.length > 0 ? filterParts.join(' & ') : undefined;
-        let tasks = await todoistClient.getTasks(filter);
+        let tasks = await todoistClient.getTasks({ projectId: args.projectId, filter: args.filterQuery });
+        const filter = args.filterQuery;
 
         // Apply limit
         tasks = tasks.slice(0, limit);
@@ -66,6 +51,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       } catch (error) {
         console.error("Error fetching tasks:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -99,7 +85,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       durationUnit: z.enum(["minute", "day"]).optional().describe("Duration unit: 'minute' or 'day' (optional)"),
     },
     async (args) => {
-      // Check subscription first
       console.log("Executing create_task tool", args);
       try {
         const task = await todoistClient.createTask({
@@ -132,6 +117,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       } catch (error) {
         console.error("Error creating task:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -156,7 +142,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       dueString: z.string().optional().describe("New due date (optional)"),
     },
     async (args) => {
-      // Check subscription first
       console.log("Executing update_task tool", args);
       try {
         await todoistClient.updateTask(args.taskId, {
@@ -178,6 +163,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       } catch (error) {
         console.error("Error updating task:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -197,7 +183,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       taskId: z.string().describe("ID of the task to complete"),
     },
     async (args) => {
-      // Check subscription first
       console.log("Executing complete_task tool", args);
       try {
         await todoistClient.completeTask(args.taskId);
@@ -212,6 +197,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       } catch (error) {
         console.error("Error completing task:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -231,7 +217,6 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       taskId: z.string().describe("ID of the task to uncomplete"),
     },
     async (args) => {
-      // Check subscription first
       console.log("Executing uncomplete_task tool", args);
       try {
         await todoistClient.uncompleteTask(args.taskId);
@@ -246,6 +231,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       } catch (error) {
         console.error("Error uncompleting task:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,

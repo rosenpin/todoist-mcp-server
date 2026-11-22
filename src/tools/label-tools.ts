@@ -39,6 +39,7 @@ export function registerLabelTools(server: McpServer, todoistClient: TodoistClie
       } catch (error) {
         console.error("Error fetching labels:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -80,6 +81,7 @@ export function registerLabelTools(server: McpServer, todoistClient: TodoistClie
       } catch (error) {
         console.error("Error creating label:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,

@@ -23,6 +23,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error fetching projects:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -66,6 +67,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error creating project:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -108,6 +110,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error updating project:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -141,6 +144,7 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
       } catch (error) {
         console.error("Error deleting project:", error);
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
