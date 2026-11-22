@@ -2,7 +2,7 @@ import { deleteUser, getToken, setToken } from "./database.js";
 import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
 import { TodoistMCPv3 } from "./todoist-mcp.js";
 import { TodoistMCPv2, TodoistMCP } from "./cleanup-do.js";
-import { renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
+import { favicon, renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
 
 // Export Durable Object classes for Cloudflare Workers
 export { TodoistMCPv3, TodoistMCPv2, TodoistMCP };
@@ -11,12 +11,6 @@ export { TodoistMCPv3, TodoistMCPv2, TodoistMCP };
 export default {
   async fetch(request: Request, env: any, ctx: any): Promise<Response> {
     const url = new URL(request.url);
-
-    console.log("Incoming request:", {
-      method: request.method,
-      pathname: url.pathname,
-      headers: Object.fromEntries(request.headers.entries()),
-    });
 
     // Handle CORS preflight
     if (request.method === "OPTIONS") {
@@ -27,6 +21,12 @@ export default {
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Accept",
         },
+      });
+    }
+
+    if (url.pathname === "/favicon.svg" || url.pathname === "/favicon.ico") {
+      return new Response(favicon, {
+        headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" },
       });
     }
 
