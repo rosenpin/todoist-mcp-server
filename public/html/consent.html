@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Authorize · Todoist MCP</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>/*{{STYLES}}*/</style>
+</head>
+<body>
+  <div class="wrap">
+    <header><a href="/"><img src="/favicon.svg" alt="">Todoist MCP</a></header>
+
+    <main>
+      <h1>Allow {{CLIENT_NAME}} to access your Todoist?</h1>
+      <p class="lead">You'll sign in with Todoist next. The app will be able to read and change your tasks and projects.</p>
+
+      <div class="card" style="padding: 4px 16px">
+        <dl class="tools" style="margin: 12px 0">
+          <dt>Publisher</dt><dd>{{PUBLISHER}}</dd>
+          <dt>Redirects to</dt><dd>{{REDIRECT_HOST}}</dd>
+        </dl>
+      </div>
+      {{LOOPBACK_NOTE}}
+
+      <form method="post" style="display: flex; gap: 8px; margin-top: 24px">
+        <input type="hidden" name="handle" value="{{HANDLE}}">
+        <button class="btn" name="decision" value="approve">Allow</button>
+        <button class="btn btn-secondary" name="decision" value="deny">Deny</button>
+      </form>
+    </main>
+
+    <footer>
+      <a href="https://github.com/rosenpin/todoist-mcp-server" target="_blank" rel="noopener">Source on GitHub</a>
+      <span>Not affiliated with Doist.</span>
+    </footer>
+  </div>
+</body>
+</html>

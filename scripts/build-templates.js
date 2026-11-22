@@ -11,6 +11,7 @@ const templates = {
   oauthSetup: page('oauth-setup'),
   success: page('success'),
   error: page('error'),
+  consent: page('consent'),
   favicon: pub('favicon.svg'),
 };
 

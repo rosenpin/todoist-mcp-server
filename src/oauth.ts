@@ -1,6 +1,6 @@
 import { getUserIdByTodoistId, setToken, setUserIdForTodoistId, storeOAuthState, validateAndCleanupState } from './database.js';
 import { authorizationErrorRedirect } from '@cloudflare/workers-oauth-provider';
-import { renderErrorPage } from './ui-loader.js';
+import { renderConsentPage, renderErrorPage } from './ui-loader.js';
 
 export async function handleOAuthInit(url: URL, env: any): Promise<Response> {
   const state = crypto.randomUUID();
@@ -60,8 +60,6 @@ async function todoistLogin(code: string, env: any): Promise<string> {
   return userId;
 }
 
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-
 // OAuth 2.1 authorize endpoint for MCP clients (Gemini etc.): consent page, then Todoist sign-in.
 export async function handleAuthorize(request: Request, env: any): Promise<Response> {
   const oauth = env.OAUTH_PROVIDER;
@@ -86,20 +84,8 @@ export async function handleAuthorize(request: Request, env: any): Promise<Respo
     const authRequest = await oauth.parseAuthRequest(request);
     const details = await oauth.describeConsent(authRequest);
     const consent = await oauth.beginConsent(authRequest);
-    const name = escapeHtml(details.clientName || "An app");
     consent.headers.set("Content-Type", "text/html; charset=utf-8");
-    return new Response(`<!doctype html>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Connect Todoist</title>
-<style>body{font:16px system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem}button{font:inherit;padding:.5rem 1rem;margin-right:.5rem}</style>
-<h1>Allow ${name} to access your Todoist?</h1>
-<p>${details.clientDomain ? `Published by <strong>${escapeHtml(details.clientDomain)}</strong>.` : "This app registered itself; its name is not verified."}
-Access will be sent to <strong>${escapeHtml(details.redirectHost)}</strong>.</p>
-${details.redirectIsLoopback ? "<p><strong>This sends access to an app on your computer.</strong> Continue only if you just started signing in from it.</p>" : ""}
-<p>You'll sign in with Todoist next. The app will be able to read and change your tasks and projects.</p>
-<form method="post"><input type="hidden" name="handle" value="${escapeHtml(consent.handle)}">
-<button name="decision" value="approve">Allow</button><button name="decision" value="deny">Deny</button></form>`,
-      { headers: consent.headers });
+    return new Response(renderConsentPage({ ...details, handle: consent.handle }), { headers: consent.headers });
   } catch (error: any) {
     if (error?.redirectTo) return Response.redirect(error.redirectTo, 302);
     if (error?.name === "AuthorizationError" || error?.name === "CimdFetchError") {
