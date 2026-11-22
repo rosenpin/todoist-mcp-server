@@ -1,4 +1,4 @@
-import { deleteUser, getToken, setToken } from "./database.js";
+import { deleteUser, getToken } from "./database.js";
 import { handleOAuthCallback, handleOAuthDiscovery, handleOAuthInit } from "./oauth.js";
 import { TodoistMCPv3 } from "./todoist-mcp.js";
 import { TodoistMCPv2, TodoistMCP } from "./cleanup-do.js";
@@ -43,57 +43,6 @@ export default {
           "Access-Control-Allow-Origin": "*",
         },
       });
-    }
-
-    // Internal token endpoints for Durable Objects
-    if (url.pathname === "/internal/get-token" && request.method === "POST") {
-      try {
-        const { userId } = await request.json() as { userId: string };
-        const db = env.DB;
-
-        if (!db) {
-          return new Response(JSON.stringify({ error: "Database not available" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-
-        const token = await getToken(db, userId);
-        return new Response(JSON.stringify({ token }), {
-          headers: { "Content-Type": "application/json" }
-        });
-      } catch (error) {
-        console.error("Error getting token:", error);
-        return new Response(JSON.stringify({ error: "Internal error" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-    }
-
-    if (url.pathname === "/internal/set-token" && request.method === "POST") {
-      try {
-        const { userId, token } = await request.json() as { userId: string; token: string };
-        const db = env.DB;
-
-        if (!db) {
-          return new Response(JSON.stringify({ error: "Database not available" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-
-        await setToken(db, userId, token);
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { "Content-Type": "application/json" }
-        });
-      } catch (error) {
-        console.error("Error storing token:", error);
-        return new Response(JSON.stringify({ error: "Internal error" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
     }
 
     // Delete account endpoint
@@ -251,7 +200,7 @@ export default {
     if (url.pathname === "/" && !request.headers.get("accept")?.includes("text/event-stream")) {
       const userId = url.searchParams.get("user_id");
 
-      if (userId) {
+      if (userId && env.DB && await getToken(env.DB, userId)) {
         const htmlContent = renderSuccessPage(url.origin, userId);
         return new Response(htmlContent, {
           headers: {
