@@ -16,8 +16,13 @@
         <details>
           <summary>Gemini</summary>
           <div>
-            <p>Add the URL as a connector and sign in with Todoist when prompted.</p>
-            <p>For Gemini CLI, add this to <code>~/.gemini/settings.json</code>, then run <code>/mcp auth todoist</code>:</p>
+            <ol class="steps">
+              <li>Open <a href="https://gemini.google.com/customize/connectors" target="_blank" rel="noopener">Connectors</a> and click <strong>+ Custom</strong>.</li>
+              <li>Enter <code>{{ORIGIN}}/mcp</code> as the MCP Server URL. Leave Additional settings empty.</li>
+              <li>Press <strong>Next</strong>, approve access, and sign in with Todoist.</li>
+              <li>Ask “what are my Todoist tasks today?” and choose <strong>Always allow</strong>.</li>
+            </ol>
+            <p style="margin-top: 12px">For Gemini CLI, add this to <code>~/.gemini/settings.json</code>, then run <code>/mcp auth todoist</code>:</p>
             <pre>{
   "mcpServers": {
     "todoist": { "httpUrl": "{{ORIGIN}}/mcp" }

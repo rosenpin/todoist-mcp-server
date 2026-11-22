@@ -13,6 +13,7 @@ Add `https://todoistmcp.rosenpin.io/mcp` to your client and sign in with Todoist
 | Claude (web / desktop) | Settings → Connectors → Add custom connector |
 | Claude Code | `claude mcp add --transport http todoist https://todoistmcp.rosenpin.io/mcp`, then sign in via `/mcp` |
 | ChatGPT | Settings → Apps & Connectors → Advanced → Developer mode, then Create with OAuth |
+| Gemini | [Connectors](https://gemini.google.com/customize/connectors) → **+ Custom** → paste the URL (leave Additional settings empty) → Next, approve and sign in. Choose **Always allow** on first tool use |
 | Gemini CLI | `~/.gemini/settings.json`: `{"mcpServers": {"todoist": {"httpUrl": "https://todoistmcp.rosenpin.io/mcp"}}}` |
 | Cursor | `~/.cursor/mcp.json`: `{"mcpServers": {"todoist": {"url": "https://todoistmcp.rosenpin.io/mcp"}}}` |
 | VS Code | `.vscode/mcp.json`: `{"servers": {"todoist": {"type": "http", "url": "https://todoistmcp.rosenpin.io/mcp"}}}` |
