@@ -29,6 +29,7 @@ export class TodoistMCPv3 extends McpAgent<{ DB: D1Database }> {
     const todoistToken = await getToken(db, userId);
     if (!todoistToken) {
       registerSetupTool(this.server, (token) => setToken(db, userId, token), url.origin);
+      this.stripUnsupportedSchemaKeywords();
       return;
     }
 
@@ -38,5 +39,28 @@ export class TodoistMCPv3 extends McpAgent<{ DB: D1Database }> {
     registerSectionTools(this.server, todoistClient);
     registerLabelTools(this.server, todoistClient);
     registerCommentTools(this.server, todoistClient);
+    this.stripUnsupportedSchemaKeywords();
+  }
+
+  // Gemini only accepts an OpenAPI subset of JSON Schema and rejects $schema / additionalProperties,
+  // which the SDK's zod conversion emits on every tool.
+  // ponytail: wraps the SDK's private tools/list handler; drop this once the SDK can emit plain schemas
+  private stripUnsupportedSchemaKeywords() {
+    const handlers = (this.server.server as any)._requestHandlers as Map<string, (req: any, extra: any) => Promise<any>>;
+    const listTools = handlers.get("tools/list");
+    if (!listTools) return;
+    const strip = (node: any): void => {
+      if (Array.isArray(node)) return node.forEach(strip);
+      if (node && typeof node === "object") {
+        delete node.$schema;
+        delete node.additionalProperties;
+        Object.values(node).forEach(strip);
+      }
+    };
+    handlers.set("tools/list", async (req, extra) => {
+      const result = await listTools(req, extra);
+      result.tools.forEach((tool: any) => strip(tool.inputSchema));
+      return result;
+    });
   }
 }

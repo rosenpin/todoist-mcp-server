@@ -291,6 +291,13 @@ export default new OAuthProvider({
   apiHandler: {
     fetch(request: Request, env: any, ctx: any) {
       ctx.props = { ...ctx.props, requestUrl: request.url };
+      if (request.method === "POST") {
+        // Log only JSON-RPC methods (never params/arguments) to debug client compatibility
+        request.clone().json().then(
+          (msg: any) => console.log("mcp", [msg].flat().map((m: any) => m?.method ?? "response")),
+          () => {},
+        );
+      }
       return TodoistMCPv3.serve("/mcp").fetch(request, env, ctx);
     },
   },
