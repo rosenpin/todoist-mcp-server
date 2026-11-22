@@ -197,7 +197,7 @@ export default {
     }
 
     // Root endpoint - show UI for non-SSE requests
-    if (url.pathname === "/" && !request.headers.get("accept")?.includes("text/event-stream")) {
+    if (url.pathname === "/" && request.method === "GET" && request.headers.get("accept")?.includes("text/html")) {
       const userId = url.searchParams.get("user_id");
 
       if (userId && env.DB && await getToken(env.DB, userId)) {
@@ -226,7 +226,7 @@ export default {
       url.pathname !== "/message";
     // Streamable HTTP (Gemini, newer clients): POST JSON-RPC to the URL itself, or follow-ups carrying mcp-session-id
     const isStreamableHttp = url.pathname === "/" &&
-      (request.method === "POST" || request.method === "DELETE" || request.headers.has("mcp-session-id"));
+      (request.method !== "GET" || request.headers.has("mcp-session-id"));
 
     console.log("Request analysis:", { isStreamMethod, isMessage, isStreamableHttp });
 
