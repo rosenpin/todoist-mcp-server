@@ -6,7 +6,7 @@ export const escapeHtml = (text: string): string =>
 
 export const favicon = templates.favicon;
 
-export function renderOAuthSetupPage(origin = 'https://todoistmcp.rosenpin.io'): string {
+export function renderOAuthSetupPage(origin: string): string {
   return templates.oauthSetup.replaceAll('{{ORIGIN}}', escapeHtml(origin));
 }
 
