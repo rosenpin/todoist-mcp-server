@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { TodoistClient } from "../todoist-client.js";
 
 export function registerSetupTool(
@@ -7,12 +7,11 @@ export function registerSetupTool(
   saveToken: (token: string) => Promise<void>,
   origin: string
 ) {
-  server.tool(
+  server.registerTool(
     "setup_todoist",
-    "Configure your Todoist API token to enable task management",
-    {
+    { description: "Configure your Todoist API token to enable task management", inputSchema: {
       token: z.string().describe("Your Todoist API token (get it from https://todoist.com/prefs/integrations)"),
-    },
+    } },
     async (args) => {
       try {
         await new TodoistClient(args.token).getProjects(); // throws if the token is invalid

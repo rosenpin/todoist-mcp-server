@@ -1,7 +1,8 @@
 import { deleteUser, getToken } from "./database.js";
 import OAuthProvider from "@cloudflare/workers-oauth-provider";
 import { handleAuthorize, handleOAuthCallback, handleOAuthInit } from "./oauth.js";
-import { TodoistMCPv3 } from "./todoist-mcp.js";
+import { createMcpHandler } from "agents/mcp/server";
+import { TodoistMCPv3, createTodoistServer } from "./todoist-mcp.js";
 import { TodoistMCPv2, TodoistMCP } from "./cleanup-do.js";
 import { favicon, renderOAuthSetupPage, renderSuccessPage } from "./ui-loader.js";
 
@@ -235,28 +236,23 @@ const app = {
         });
       }
 
+      if (isStreamableHttp) {
+        return serveStateless(request, env, ctx, userId, "/");
+      }
+
+      // Legacy SSE: the agents library names the session's Durable Object after sessionId
       const modifiedUrl = new URL(request.url);
       if (!modifiedUrl.searchParams.has("sessionId")) {
         modifiedUrl.searchParams.set("sessionId", userId);
       }
-
-      // Create a new request with the modified URL (body teed so closeWhenAnswered can read request ids)
       const modifiedRequest = new Request(modifiedUrl.toString(), {
         method: request.method,
         headers: request.headers,
-        body: request.clone().body,
+        body: request.body,
         // @ts-ignore - duplex is needed for streaming bodies in Node.js
         duplex: "half",
       });
-
-      // Set request URL in context for agents library
-      ctx.props = ctx.props || {};
-      ctx.props.requestUrl = modifiedUrl.toString();
-
-      console.log("Handling MCP request via agents library", { userId, sessionId: modifiedUrl.searchParams.get("sessionId") });
-      if (isStreamableHttp) {
-        return closeWhenAnswered(request, TodoistMCPv3.serve("/").fetch(modifiedRequest, env, ctx));
-      }
+      ctx.props = { ...ctx.props, requestUrl: modifiedUrl.toString() };
       return await TodoistMCPv3.serveSSE("/*").fetch(modifiedRequest, env, ctx);
     }
 
@@ -282,43 +278,10 @@ const app = {
   },
 };
 
-// agents@0.0.94 leaves Streamable HTTP response streams open ~10s after the last reply, and clients
-// (Gemini) wait for the stream to end. Close it once every JSON-RPC request in the POST is answered.
-// ponytail: drop this after upgrading `agents`, which closes the stream itself
-async function closeWhenAnswered(request: Request, responsePromise: Promise<Response>): Promise<Response> {
-  const pending = new Set<unknown>();
-  if (request.method === "POST") {
-    try {
-      for (const msg of [await request.json()].flat() as any[]) {
-        if (msg?.method !== undefined && msg.id !== undefined) pending.add(msg.id);
-      }
-    } catch {}
-  }
-  const response = await responsePromise;
-  if (!pending.size || !response.body || !response.headers.get("content-type")?.includes("text/event-stream")) {
-    return response;
-  }
-
-  const decoder = new TextDecoder();
-  let buffer = "";
-  const closer = new TransformStream<Uint8Array, Uint8Array>({
-    transform(chunk, controller) {
-      controller.enqueue(chunk);
-      buffer += decoder.decode(chunk, { stream: true });
-      let end;
-      while ((end = buffer.indexOf("\n\n")) >= 0) {
-        const data = buffer.slice(0, end).split("\n").find((line) => line.startsWith("data: "));
-        buffer = buffer.slice(end + 2);
-        try {
-          const msg = data && JSON.parse(data.slice(6));
-          if (msg && ("result" in msg || "error" in msg)) pending.delete(msg.id);
-        } catch {}
-      }
-      if (!pending.size) controller.terminate();
-    },
-  });
-  response.body.pipeTo(closer.writable).catch(() => {});
-  return new Response(closer.readable, response);
+// Streamable HTTP is stateless: a fresh server per request, so no Durable Object per session.
+function serveStateless(request: Request, env: any, ctx: any, userId: string, route: string): Promise<Response> {
+  const origin = new URL(request.url).origin;
+  return createMcpHandler(() => createTodoistServer(env.DB, userId, origin), { route })(request, env, ctx);
 }
 
 // Public origins this worker answers on; OAuth resource metadata must name the exact origin a client used.
@@ -330,8 +293,7 @@ const ORIGINS = [
 
 const mcpApiHandler = {
   fetch(request: Request, env: any, ctx: any) {
-    ctx.props = { ...ctx.props, requestUrl: request.url };
-    return closeWhenAnswered(request, TodoistMCPv3.serve("/mcp").fetch(request.clone(), env, ctx));
+    return serveStateless(request, env, ctx, ctx.props.userId, "/mcp");
   },
 };
 

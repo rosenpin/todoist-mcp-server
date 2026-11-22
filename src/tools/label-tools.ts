@@ -1,13 +1,12 @@
 import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { TodoistClient } from "../todoist-client.js";
 
 export function registerLabelTools(server: McpServer, todoistClient: TodoistClient) {
   // Register get_labels tool
-  server.tool(
+  server.registerTool(
     "get_labels",
-    "Get all labels",
-    {},
+    { description: "Get all labels", inputSchema: {} },
     async () => {
       console.log("Executing get_labels tool");
       try {
@@ -52,15 +51,14 @@ export function registerLabelTools(server: McpServer, todoistClient: TodoistClie
   );
 
   // Register create_label tool
-  server.tool(
+  server.registerTool(
     "create_label",
-    "Create a new label",
-    {
+    { description: "Create a new label", inputSchema: {
       name: z.string().describe("Label name (required)"),
       color: z.string().optional().describe("Label color (optional)"),
       order: z.number().optional().describe("Label order/position (optional)"),
       isFavorite: z.boolean().optional().describe("Mark label as favorite (optional)"),
-    },
+    } },
     async (args) => {
       console.log("Executing create_label tool", args);
       try {

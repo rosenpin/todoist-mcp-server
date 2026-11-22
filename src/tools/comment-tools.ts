@@ -1,16 +1,15 @@
 import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { TodoistClient } from "../todoist-client.js";
 
 export function registerCommentTools(server: McpServer, todoistClient: TodoistClient) {
   // Register get_comments tool
-  server.tool(
+  server.registerTool(
     "get_comments",
-    "Get comments for a task or project",
-    {
+    { description: "Get comments for a task or project", inputSchema: {
       taskId: z.string().optional().describe("Task ID to get comments from (provide either taskId or projectId)"),
       projectId: z.string().optional().describe("Project ID to get comments from (provide either taskId or projectId)"),
-    },
+    } },
     async (args) => {
       console.log("Executing get_comments tool", args);
       
@@ -71,14 +70,13 @@ export function registerCommentTools(server: McpServer, todoistClient: TodoistCl
   );
 
   // Register create_comment tool
-  server.tool(
+  server.registerTool(
     "create_comment",
-    "Add a comment to a task or project",
-    {
+    { description: "Add a comment to a task or project", inputSchema: {
       content: z.string().describe("Comment content (required)"),
       taskId: z.string().optional().describe("Task ID to comment on (provide either taskId or projectId)"),
       projectId: z.string().optional().describe("Project ID to comment on (provide either taskId or projectId)"),
-    },
+    } },
     async (args) => {
       console.log("Executing create_comment tool", args);
       

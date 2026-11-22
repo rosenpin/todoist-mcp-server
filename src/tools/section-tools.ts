@@ -1,15 +1,14 @@
 import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { TodoistClient } from "../todoist-client.js";
 
 export function registerSectionTools(server: McpServer, todoistClient: TodoistClient) {
   // Register get_sections tool
-  server.tool(
+  server.registerTool(
     "get_sections",
-    "Get all sections in a project",
-    {
+    { description: "Get all sections in a project", inputSchema: {
       projectId: z.string().optional().describe("Project ID to get sections from (optional, gets all sections if not provided)"),
-    },
+    } },
     async (args) => {
       console.log("Executing get_sections tool", args);
       try {
@@ -54,14 +53,13 @@ export function registerSectionTools(server: McpServer, todoistClient: TodoistCl
   );
 
   // Register create_section tool
-  server.tool(
+  server.registerTool(
     "create_section",
-    "Create a new section in a project",
-    {
+    { description: "Create a new section in a project", inputSchema: {
       name: z.string().describe("Section name (required)"),
       projectId: z.string().describe("Project ID where the section will be created (required)"),
       order: z.number().optional().describe("Section order/position (optional)"),
-    },
+    } },
     async (args) => {
       console.log("Executing create_section tool", args);
       try {

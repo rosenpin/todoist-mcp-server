@@ -1,18 +1,17 @@
 import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { TodoistClient } from "../todoist-client.js";
 
 export function registerTaskTools(server: McpServer, todoistClient: TodoistClient) {
 
   // Register get_tasks tool  
-  server.tool(
+  server.registerTool(
     "get_tasks",
-    "Get tasks from Todoist with optional filtering",
-    {
+    { description: "Get tasks from Todoist with optional filtering", inputSchema: {
       projectId: z.string().optional().describe("Filter by project ID (optional)"),
       filterQuery: z.string().optional().describe("Todoist filter query (optional)"),
       limit: z.number().min(1).max(100).optional().describe("Maximum number of tasks (default: 20, max: 100)"),
-    },
+    } },
     async (args) => {
       console.log("Executing get_tasks tool", args);
       try {
@@ -64,10 +63,9 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
   );
 
   // Register create_task tool
-  server.tool(
+  server.registerTool(
     "create_task",
-    "Create a new task in Todoist",
-    {
+    { description: "Create a new task in Todoist", inputSchema: {
       content: z.string().min(1).describe("Task content/title (required, non-empty)"),
       description: z.string().optional().describe("Task description (optional)"),
       projectId: z.string().optional().describe("Project ID (optional)"),
@@ -83,7 +81,7 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
       dueLang: z.string().optional().describe("Language for parsing due_string (optional)"),
       duration: z.number().optional().describe("Duration amount (optional)"),
       durationUnit: z.enum(["minute", "day"]).optional().describe("Duration unit: 'minute' or 'day' (optional)"),
-    },
+    } },
     async (args) => {
       console.log("Executing create_task tool", args);
       try {
@@ -130,17 +128,16 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
   );
 
   // Register update_task tool
-  server.tool(
+  server.registerTool(
     "update_task",
-    "Update an existing task",
-    {
+    { description: "Update an existing task", inputSchema: {
       taskId: z.string().describe("ID of the task to update"),
       content: z.string().optional().describe("New task content/title (optional)"),
       description: z.string().optional().describe("New task description (optional)"),
       labels: z.array(z.string()).optional().describe("New list of label names (optional)"),
       priority: z.number().min(1).max(4).optional().describe("New priority (1-4, optional)"),
       dueString: z.string().optional().describe("New due date (optional)"),
-    },
+    } },
     async (args) => {
       console.log("Executing update_task tool", args);
       try {
@@ -176,12 +173,11 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
   );
 
   // Register complete_task tool
-  server.tool(
+  server.registerTool(
     "complete_task",
-    "Mark a task as completed",
-    {
+    { description: "Mark a task as completed", inputSchema: {
       taskId: z.string().describe("ID of the task to complete"),
-    },
+    } },
     async (args) => {
       console.log("Executing complete_task tool", args);
       try {
@@ -210,12 +206,11 @@ export function registerTaskTools(server: McpServer, todoistClient: TodoistClien
   );
 
   // Register uncomplete_task tool
-  server.tool(
+  server.registerTool(
     "uncomplete_task",
-    "Mark a completed task as active again",
-    {
+    { description: "Mark a completed task as active again", inputSchema: {
       taskId: z.string().describe("ID of the task to uncomplete"),
-    },
+    } },
     async (args) => {
       console.log("Executing uncomplete_task tool", args);
       try {

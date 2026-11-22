@@ -1,13 +1,12 @@
 import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { TodoistClient } from "../todoist-client.js";
 
 export function registerProjectTools(server: McpServer, todoistClient: TodoistClient) {
   // Register list_projects tool
-  server.tool(
+  server.registerTool(
     "list_projects",
-    "List all Todoist projects",
-    {},
+    { description: "List all Todoist projects", inputSchema: {} },
     async () => {
       console.log("Executing list_projects tool");
       try {
@@ -36,16 +35,15 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
   );
 
   // Register create_project tool
-  server.tool(
+  server.registerTool(
     "create_project",
-    "Create a new project in Todoist",
-    {
+    { description: "Create a new project in Todoist", inputSchema: {
       name: z.string().describe("Project name (required)"),
       parentId: z.string().optional().describe("Parent project ID for sub-projects (optional)"),
       color: z.string().optional().describe("Project color (optional)"),
       isFavorite: z.boolean().optional().describe("Mark project as favorite (optional)"),
       viewStyle: z.enum(["list", "board"]).optional().describe("View style: 'list' or 'board' (optional)"),
-    },
+    } },
     async (args) => {
       console.log("Executing create_project tool", args);
       try {
@@ -80,16 +78,15 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
   );
 
   // Register update_project tool
-  server.tool(
+  server.registerTool(
     "update_project",
-    "Update an existing project",
-    {
+    { description: "Update an existing project", inputSchema: {
       projectId: z.string().describe("ID of the project to update"),
       name: z.string().optional().describe("New project name (optional)"),
       color: z.string().optional().describe("New project color (optional)"),
       isFavorite: z.boolean().optional().describe("Mark project as favorite (optional)"),
       viewStyle: z.enum(["list", "board"]).optional().describe("View style: 'list' or 'board' (optional)"),
-    },
+    } },
     async (args) => {
       console.log("Executing update_project tool", args);
       try {
@@ -123,12 +120,11 @@ export function registerProjectTools(server: McpServer, todoistClient: TodoistCl
   );
 
   // Register delete_project tool
-  server.tool(
+  server.registerTool(
     "delete_project",
-    "Delete a project",
-    {
+    { description: "Delete a project", inputSchema: {
       projectId: z.string().describe("ID of the project to delete"),
-    },
+    } },
     async (args) => {
       console.log("Executing delete_project tool", args);
       try {
