@@ -196,7 +196,7 @@ const app = {
           },
         });
       } else {
-        const htmlContent = renderOAuthSetupPage();
+        const htmlContent = renderOAuthSetupPage(url.origin);
         return new Response(htmlContent, {
           headers: {
             "Content-Type": "text/html",

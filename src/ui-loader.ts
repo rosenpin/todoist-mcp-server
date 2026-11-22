@@ -6,7 +6,6 @@ export const escapeHtml = (text: string): string =>
 
 export const favicon = templates.favicon;
 
-// ponytail: default covers callers that don't pass the request origin yet (preview would show the prod URL)
 export function renderOAuthSetupPage(origin = 'https://todoistmcp.rosenpin.io'): string {
   return templates.oauthSetup.replaceAll('{{ORIGIN}}', escapeHtml(origin));
 }
