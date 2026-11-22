@@ -277,6 +277,14 @@ export default {
     ctx.props = ctx.props || {};
     ctx.props.requestUrl = request.url;
 
+    // Plain GET on the MCP URL (Gemini probes this): Streamable HTTP has no standalone GET stream here
+    if (url.pathname === "/") {
+      return new Response("Method Not Allowed", {
+        status: 405,
+        headers: { "Allow": "POST, DELETE", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
     // Default 404 response
     return new Response("Not Found", {
       status: 404,
