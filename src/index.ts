@@ -275,10 +275,13 @@ export default {
     const isMessage = request.method === "POST" &&
       url.pathname.includes("/message") &&
       url.pathname !== "/message";
+    // Streamable HTTP (Gemini, newer clients): POST JSON-RPC to the URL itself, or follow-ups carrying mcp-session-id
+    const isStreamableHttp = url.pathname === "/" &&
+      (request.method === "POST" || request.method === "DELETE" || request.headers.has("mcp-session-id"));
 
-    console.log("Request analysis:", { isStreamMethod, isMessage });
+    console.log("Request analysis:", { isStreamMethod, isMessage, isStreamableHttp });
 
-    if (isStreamMethod || isMessage) {
+    if (isStreamMethod || isMessage || isStreamableHttp) {
       // Require user_id to prevent orphaned Durable Objects from being created
       // for every connection (bots, scanners, misconfigured clients).
       // Without this, the agents library creates a new DO per connection,
@@ -315,6 +318,9 @@ export default {
       ctx.props.requestUrl = modifiedUrl.toString();
 
       console.log("Handling MCP request via agents library", { userId, sessionId: modifiedUrl.searchParams.get("sessionId") });
+      if (isStreamableHttp) {
+        return await TodoistMCPv3.serve("/").fetch(modifiedRequest, env, ctx);
+      }
       return await TodoistMCPv3.serveSSE("/*").fetch(modifiedRequest, env, ctx);
     }
 
