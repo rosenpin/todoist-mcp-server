@@ -240,11 +240,11 @@ const app = {
         modifiedUrl.searchParams.set("sessionId", userId);
       }
 
-      // Create a new request with the modified URL
+      // Create a new request with the modified URL (body teed so closeWhenAnswered can read request ids)
       const modifiedRequest = new Request(modifiedUrl.toString(), {
         method: request.method,
         headers: request.headers,
-        body: request.body,
+        body: request.clone().body,
         // @ts-ignore - duplex is needed for streaming bodies in Node.js
         duplex: "half",
       });
@@ -255,7 +255,7 @@ const app = {
 
       console.log("Handling MCP request via agents library", { userId, sessionId: modifiedUrl.searchParams.get("sessionId") });
       if (isStreamableHttp) {
-        return await TodoistMCPv3.serve("/").fetch(modifiedRequest, env, ctx);
+        return closeWhenAnswered(request, TodoistMCPv3.serve("/").fetch(modifiedRequest, env, ctx));
       }
       return await TodoistMCPv3.serveSSE("/*").fetch(modifiedRequest, env, ctx);
     }
@@ -282,6 +282,45 @@ const app = {
   },
 };
 
+// agents@0.0.94 leaves Streamable HTTP response streams open ~10s after the last reply, and clients
+// (Gemini) wait for the stream to end. Close it once every JSON-RPC request in the POST is answered.
+// ponytail: drop this after upgrading `agents`, which closes the stream itself
+async function closeWhenAnswered(request: Request, responsePromise: Promise<Response>): Promise<Response> {
+  const pending = new Set<unknown>();
+  if (request.method === "POST") {
+    try {
+      for (const msg of [await request.json()].flat() as any[]) {
+        if (msg?.method !== undefined && msg.id !== undefined) pending.add(msg.id);
+      }
+    } catch {}
+  }
+  const response = await responsePromise;
+  if (!pending.size || !response.body || !response.headers.get("content-type")?.includes("text/event-stream")) {
+    return response;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const closer = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      controller.enqueue(chunk);
+      buffer += decoder.decode(chunk, { stream: true });
+      let end;
+      while ((end = buffer.indexOf("\n\n")) >= 0) {
+        const data = buffer.slice(0, end).split("\n").find((line) => line.startsWith("data: "));
+        buffer = buffer.slice(end + 2);
+        try {
+          const msg = data && JSON.parse(data.slice(6));
+          if (msg && ("result" in msg || "error" in msg)) pending.delete(msg.id);
+        } catch {}
+      }
+      if (!pending.size) controller.terminate();
+    },
+  });
+  response.body.pipeTo(closer.writable).catch(() => {});
+  return new Response(closer.readable, response);
+}
+
 // ponytail: canonical origin is hardcoded; move to config if the worker ever gets a custom domain
 const ORIGIN = "https://todoist-mcp-server.real-tomer-rosenfeld.workers.dev";
 
@@ -291,14 +330,7 @@ export default new OAuthProvider({
   apiHandler: {
     fetch(request: Request, env: any, ctx: any) {
       ctx.props = { ...ctx.props, requestUrl: request.url };
-      if (request.method === "POST") {
-        // Log only JSON-RPC methods (never params/arguments) to debug client compatibility
-        request.clone().json().then(
-          (msg: any) => console.log("mcp", [msg].flat().map((m: any) => m?.method ?? "response")),
-          () => {},
-        );
-      }
-      return TodoistMCPv3.serve("/mcp").fetch(request, env, ctx);
+      return closeWhenAnswered(request, TodoistMCPv3.serve("/mcp").fetch(request.clone(), env, ctx));
     },
   },
   defaultHandler: app as any,
