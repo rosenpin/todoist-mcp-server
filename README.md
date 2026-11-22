@@ -6,20 +6,18 @@ A hosted [Model Context Protocol](https://modelcontextprotocol.io) server for To
 
 ## Quick start
 
-1. Open [todoistmcp.rosenpin.io](https://todoistmcp.rosenpin.io) and connect your Todoist account.
-2. Copy your personal server URL. Keep it private: it grants access to your Todoist account.
-3. Add it to your client:
+Add `https://todoistmcp.rosenpin.io/mcp` to your client and sign in with Todoist when prompted:
 
 | Client | How |
 | --- | --- |
 | Claude (web / desktop) | Settings → Connectors → Add custom connector |
-| Claude Code | `claude mcp add --transport http todoist "<URL>"` |
-| ChatGPT | Settings → Apps & Connectors → Advanced → Developer mode, then Create |
-| Gemini CLI | `~/.gemini/settings.json`: `{"mcpServers": {"todoist": {"httpUrl": "<URL>"}}}` |
-| Cursor | `~/.cursor/mcp.json`: `{"mcpServers": {"todoist": {"url": "<URL>"}}}` |
-| VS Code | `.vscode/mcp.json`: `{"servers": {"todoist": {"type": "http", "url": "<URL>"}}}` |
+| Claude Code | `claude mcp add --transport http todoist https://todoistmcp.rosenpin.io/mcp`, then sign in via `/mcp` |
+| ChatGPT | Settings → Apps & Connectors → Advanced → Developer mode, then Create with OAuth |
+| Gemini CLI | `~/.gemini/settings.json`: `{"mcpServers": {"todoist": {"httpUrl": "https://todoistmcp.rosenpin.io/mcp"}}}` |
+| Cursor | `~/.cursor/mcp.json`: `{"mcpServers": {"todoist": {"url": "https://todoistmcp.rosenpin.io/mcp"}}}` |
+| VS Code | `.vscode/mcp.json`: `{"servers": {"todoist": {"type": "http", "url": "https://todoistmcp.rosenpin.io/mcp"}}}` |
 
-The server speaks Streamable HTTP and, for older clients, SSE, both on the same URL.
+**Clients without OAuth support:** get a personal URL at [todoistmcp.rosenpin.io](https://todoistmcp.rosenpin.io) ("Get a personal URL"). It embeds your access, so keep it secret. It works over Streamable HTTP and SSE.
 
 ## Tools
 
