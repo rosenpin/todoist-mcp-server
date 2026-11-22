@@ -40,12 +40,14 @@
           </div>
         </details>
         <details>
-          <summary>Gemini CLI</summary>
+          <summary>Gemini</summary>
           <div>
-            <p>Add to <code>~/.gemini/settings.json</code>:</p>
+            <p>Gemini uses Todoist sign-in instead of the URL above. Add this server and sign in when prompted:</p>
+            <pre>{{ORIGIN}}/mcp</pre>
+            <p style="margin-top: 12px">For Gemini CLI, add to <code>~/.gemini/settings.json</code>:</p>
             <pre>{
   "mcpServers": {
-    "todoist": { "httpUrl": "{{MCP_URL}}" }
+    "todoist": { "httpUrl": "{{ORIGIN}}/mcp" }
   }
 }</pre>
           </div>
