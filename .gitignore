@@ -50,4 +50,5 @@ cdk.out/
 .mcp.json
 screenshots/
 
-src/*generated.ts.dev.vars
+src/*generated.ts
+.dev.vars
