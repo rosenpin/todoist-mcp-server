@@ -3,360 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Success! Your Todoist-Claude Integration is Ready</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'claude-orange': '#CD7F32',
-            'todoist-red': '#e44332'
-          }
-        }
-      }
-    }
-  </script>
+  <meta name="referrer" content="no-referrer">
+  <title>Connected · Todoist MCP</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>/*{{STYLES}}*/</style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-green-500 to-emerald-600 flex flex-col items-center justify-center p-5 font-sans">
-  <!-- Success icon -->
-  <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-5 shadow-2xl">
-    <svg class="w-10 h-10 text-green-500" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.5 6.5L9 18L3.5 12.5L5 11L9 15L19 5L20.5 6.5Z"/>
-    </svg>
+<body>
+  <div class="wrap">
+    <header><a href="/"><img src="/favicon.svg" alt="">Todoist MCP</a></header>
+
+    <main>
+      <h1>Todoist is connected</h1>
+      <p class="lead">Add this server URL to your AI assistant to start using your tasks.</p>
+
+      <div class="field">
+        <input id="mcpUrl" type="text" value="{{MCP_URL}}" readonly aria-label="Your MCP server URL">
+        <button id="copyBtn" class="btn" type="button">Copy</button>
+      </div>
+      <p class="note">This URL gives full access to your Todoist account. Keep it private, like a password.</p>
+
+      <h2>Add it to your client</h2>
+      <div class="card">
+        <details open>
+          <summary>Claude</summary>
+          <div>
+            <p>In claude.ai or Claude Desktop, open <strong>Settings → Connectors → Add custom connector</strong>, name it “Todoist” and paste the URL.</p>
+            <p>For Claude Code, run:</p>
+            <pre>claude mcp add --transport http todoist "{{MCP_URL}}"</pre>
+            <p class="small muted" style="margin-top: 8px"><a href="https://www.youtube.com/watch?v=62coj9VCJo8" target="_blank" rel="noopener">Video walkthrough</a></p>
+          </div>
+        </details>
+        <details>
+          <summary>ChatGPT</summary>
+          <div>
+            <p>Enable <strong>Developer mode</strong> under Settings → Apps &amp; Connectors → Advanced, then choose <strong>Create</strong>, paste the URL and set authentication to “No authentication”.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Gemini CLI</summary>
+          <div>
+            <p>Add to <code>~/.gemini/settings.json</code>:</p>
+            <pre>{
+  "mcpServers": {
+    "todoist": { "httpUrl": "{{MCP_URL}}" }
+  }
+}</pre>
+          </div>
+        </details>
+        <details>
+          <summary>Cursor</summary>
+          <div>
+            <p>Add to <code>~/.cursor/mcp.json</code>:</p>
+            <pre>{
+  "mcpServers": {
+    "todoist": { "url": "{{MCP_URL}}" }
+  }
+}</pre>
+          </div>
+        </details>
+        <details>
+          <summary>VS Code</summary>
+          <div>
+            <p>Add to <code>.vscode/mcp.json</code>:</p>
+            <pre>{
+  "servers": {
+    "todoist": { "type": "http", "url": "{{MCP_URL}}" }
+  }
+}</pre>
+          </div>
+        </details>
+        <details>
+          <summary>Other clients</summary>
+          <div>
+            <p>Add the URL as a remote MCP server. It speaks Streamable HTTP and, for older clients, SSE. No extra authentication is needed.</p>
+          </div>
+        </details>
+      </div>
+
+      <h2>Available tools</h2>
+      <dl class="tools">
+        <dt>Tasks</dt><dd>get_tasks, create_task, update_task, complete_task, uncomplete_task</dd>
+        <dt>Projects</dt><dd>list_projects, create_project, update_project, delete_project</dd>
+        <dt>Sections</dt><dd>get_sections, create_section</dd>
+        <dt>Labels</dt><dd>get_labels, create_label</dd>
+        <dt>Comments</dt><dd>get_comments, create_comment</dd>
+      </dl>
+
+      <h2>Disconnect</h2>
+      <div class="danger-zone">
+        <p class="muted small">Deletes your stored Todoist token. This URL stops working immediately.</p>
+        <button id="deleteBtn" class="btn btn-danger" type="button" data-user-id="{{USER_ID}}">Disconnect</button>
+      </div>
+      <p id="deleteError" class="small" style="color: var(--danger); margin-top: 8px" hidden></p>
+    </main>
+
+    <footer>
+      <a href="https://github.com/rosenpin/todoist-mcp-server" target="_blank" rel="noopener">Source on GitHub</a>
+      <a href="mailto:i@rosenpin.io">i@rosenpin.io</a>
+      <span>Not affiliated with Doist.</span>
+    </footer>
   </div>
-  
-  <h1 class="text-white text-3xl sm:text-4xl font-bold text-center mb-10 drop-shadow-lg">
-    🎉 Your Integration is Ready!
-  </h1>
-  
-  <!-- Main card -->
-  <div class="bg-white rounded-2xl p-6 sm:p-10 max-w-4xl w-full shadow-2xl">
-    <!-- Subscription Status -->
-    <div class="mb-8" id="subscription-status">
-      <!-- {{SUBSCRIPTION_STATUS}} placeholder will be replaced by server -->
-    </div>
-    
-    <!-- URL Section -->
-    <div class="mb-8">
-      <div class="text-xl font-bold text-gray-900 mb-3">Your Personal MCP Integration URL</div>
-      <div id="url-section">
-        <!-- {{URL_SECTION}} placeholder will be replaced by server -->
-      </div>
-    </div>
-    
-    <!-- Security Warning -->
-    <div class="bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-300 
-                rounded-xl p-5 mb-8">
-      <div class="flex items-center gap-2 font-bold text-orange-700 mb-3">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
-        </svg>
-        🔒 Keep This URL Private & Secure
-      </div>
-      <div class="text-orange-800 text-sm leading-relaxed">
-        <strong>This URL provides direct access to your Todoist account.</strong> Never share it publicly, 
-        in screenshots, or with unauthorized people. Treat it like a password - anyone with this URL 
-        can read and modify your Todoist data.
-      </div>
-    </div>
-    
-    <!-- Instructions -->
-    <div class="mb-8">
-      <div class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-        </svg>
-        Setup Instructions
-      </div>
-      <ol class="space-y-4">
-        <li class="flex items-start gap-4">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white w-8 h-8 
-                      rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-            1
-          </div>
-          <span class="text-gray-700 leading-relaxed pt-1">
-            <strong>Copy the URL above</strong> using the copy button
-          </span>
-        </li>
-        <li class="flex items-start gap-4">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white w-8 h-8 
-                      rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-            2
-          </div>
-          <span class="text-gray-700 leading-relaxed pt-1">
-            <strong>Open Claude</strong> and go to Profiles → Settings → Integrations → Add Custom Integration
-          </span>
-        </li>
-        <li class="flex items-start gap-4">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white w-8 h-8 
-                      rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-            3
-          </div>
-          <span class="text-gray-700 leading-relaxed pt-1">
-            <strong>Set Integration Name to "Todoist"</strong> and paste your integration URL above as the Integration URL
-          </span>
-        </li>
-        <li class="flex items-start gap-4">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white w-8 h-8 
-                      rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-            4
-          </div>
-          <span class="text-gray-700 leading-relaxed pt-1">
-            <strong>Start using Todoist tools</strong> in your Claude conversations!
-          </span>
-        </li>
-      </ol>
-    </div>
-    
-    <!-- Video Tutorial -->
-    <div class="mb-8">
-      <div class="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10,16.5V7.5L16,12M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
-        </svg>
-        Video Tutorial
-      </div>
-      <div class="bg-gray-50 rounded-xl p-1 shadow-inner">
-        <div class="relative pb-[56.25%] h-0">
-          <iframe 
-            class="absolute top-0 left-0 w-full h-full rounded-lg"
-            src="https://www.youtube.com/embed/62coj9VCJo8" 
-            title="How to configure Todoist MCP in Claude Code"
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-            referrerpolicy="strict-origin-when-cross-origin" 
-            allowfullscreen>
-          </iframe>
-        </div>
-      </div>
-      <p class="text-sm text-gray-600 mt-3 text-center">
-        Watch this video for step-by-step instructions on configuring the Todoist integration in Claude Code
-      </p>
-    </div>
-    
-    <!-- Tools Section -->
-    <div class="bg-gray-50 rounded-xl p-6 mb-8">
-      <div class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M22.7 19L13.6 9.9C14.5 7.6 14 4.9 12.1 3C10.1 1 7.1 0.6 4.7 1.7L9 6L6 9L1.6 4.7C0.4 7.1 0.9 10.1 2.9 12.1C4.8 14 7.5 14.5 9.8 13.6L18.9 22.7C19.3 23.1 19.9 23.1 20.3 22.7L22.6 20.4C23.1 20 23.1 19.3 22.7 19Z"/>
-        </svg>
-        Available Todoist Tools
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-lg border border-gray-200">
-          <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/>
-            </svg>
-            Tasks
-          </div>
-          <div class="text-xs text-gray-600 leading-tight">
-            get_tasks, create_task, update_task, complete_task, uncomplete_task
-          </div>
-        </div>
-        <div class="bg-white p-4 rounded-lg border border-gray-200">
-          <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z"/>
-            </svg>
-            Projects
-          </div>
-          <div class="text-xs text-gray-600 leading-tight">
-            list_projects, create_project, update_project, delete_project
-          </div>
-        </div>
-        <div class="bg-white p-4 rounded-lg border border-gray-200">
-          <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M19,5V19H5V5H19M17,17H7V15H17V17M17,13H7V11H17V13M17,9H7V7H17V9Z"/>
-            </svg>
-            Sections
-          </div>
-          <div class="text-xs text-gray-600 leading-tight">
-            get_sections, create_section
-          </div>
-        </div>
-        <div class="bg-white p-4 rounded-lg border border-gray-200">
-          <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.63,5.84C17.27,5.33 16.67,5 16,5L5,5.01C3.9,5.01 3,5.9 3,7V17C3,18.1 3.9,19 5,19H16C16.67,19 17.27,18.67 17.63,18.16L22,12L17.63,5.84Z"/>
-            </svg>
-            Labels
-          </div>
-          <div class="text-xs text-gray-600 leading-tight">
-            get_labels, create_label
-          </div>
-        </div>
-        <div class="bg-white p-4 rounded-lg border border-gray-200">
-          <div class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9,22A1,1 0 0,1 8,21V18H4A2,2 0 0,1 2,16V4C2,2.89 2.9,2 4,2H20A2,2 0 0,1 22,4V16A2,2 0 0,1 20,18H13.9L10.2,21.71C10,21.9 9.75,22 9.5,22H9Z"/>
-            </svg>
-            Comments
-          </div>
-          <div class="text-xs text-gray-600 leading-tight">
-            get_comments, create_comment
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Action buttons -->
-    <div class="flex flex-col sm:flex-row justify-center gap-4">
-      <a href="https://claude.ai/settings/integrations" 
-         target="_blank"
-         class="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-claude-orange to-orange-600 
-                text-white px-6 py-3 rounded-xl font-semibold 
-                hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/>
-        </svg>
-        Open Claude Integration Settings
-      </a>
-      <button onclick="deleteAccount()" 
-              class="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-red-500 to-red-600 
-                     text-white px-6 py-3 rounded-xl font-semibold 
-                     hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
-              id="deleteBtn">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
-        </svg>
-        Delete Account
-      </button>
-    </div>
-  </div>
-  
+
   <script>
-    // Success page functionality
-    function copyToClipboard() {
-      const urlInput = document.getElementById('integrationUrl');
-      const copyBtn = document.getElementById('copyBtn');
-      
-      urlInput.select();
-      urlInput.setSelectionRange(0, 99999);
-      navigator.clipboard.writeText(urlInput.value).then(() => {
-        copyBtn.textContent = 'Copied!';
-        copyBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-        copyBtn.classList.add('bg-green-500');
-        
-        setTimeout(() => {
-          copyBtn.textContent = 'Copy';
-          copyBtn.classList.remove('bg-green-500');
-          copyBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
-        }, 2000);
-      });
-    }
-
-    function createSubscription() {
-      const subscribeBtn = document.getElementById('subscribeBtn');
-      const originalText = subscribeBtn.innerHTML;
-      const userId = window.todoistMcpData?.userId;
-      
-      if (!userId) {
-        alert('User ID not found. Please refresh the page.');
-        return;
+    const copyBtn = document.getElementById('copyBtn');
+    copyBtn.addEventListener('click', async () => {
+      const input = document.getElementById('mcpUrl');
+      try {
+        await navigator.clipboard.writeText(input.value);
+        copyBtn.textContent = 'Copied';
+      } catch {
+        input.select();
+        copyBtn.textContent = 'Press ⌘C';
       }
-      
-      subscribeBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="currentColor"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>Creating...';
-      subscribeBtn.disabled = true;
-      
-      fetch('/create-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl;
-        } else {
-          alert('Failed to create subscription: ' + (data.error || 'Unknown error'));
-          subscribeBtn.innerHTML = originalText;
-          subscribeBtn.disabled = false;
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to create subscription: Network error');
-        subscribeBtn.innerHTML = originalText;
-        subscribeBtn.disabled = false;
-      });
-    }
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+    });
 
-    function deleteAccount() {
-      const userId = window.todoistMcpData?.userId;
-      
-      if (!userId) {
-        alert('User ID not found. Please refresh the page.');
-        return;
-      }
-      
-      if (confirm('Are you sure you want to delete your account? This will permanently remove your integration URL and you will need to reconnect to create a new one.')) {
-        const deleteBtn = document.getElementById('deleteBtn');
-        const originalText = deleteBtn.innerHTML;
-        
-        deleteBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="currentColor"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>Deleting...';
-        deleteBtn.disabled = true;
-        
-        fetch('/delete-account', {
+    const deleteBtn = document.getElementById('deleteBtn');
+    const deleteError = document.getElementById('deleteError');
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm('Disconnect Todoist? Your server URL will stop working and you will need to connect again to get a new one.')) return;
+      deleteBtn.disabled = true;
+      deleteError.hidden = true;
+      try {
+        const res = await fetch('/delete-account', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Account deleted successfully. You will now be redirected to the main page.');
-            window.location.href = '/';
-          } else {
-            alert('Failed to delete account: ' + (data.error || 'Unknown error'));
-            deleteBtn.innerHTML = originalText;
-            deleteBtn.disabled = false;
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('Failed to delete account: Network error');
-          deleteBtn.innerHTML = originalText;
-          deleteBtn.disabled = false;
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: deleteBtn.dataset.userId }),
         });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+        location.href = '/';
+      } catch (e) {
+        deleteError.textContent = 'Could not disconnect: ' + e.message;
+        deleteError.hidden = false;
+        deleteBtn.disabled = false;
       }
-    }
+    });
   </script>
-  
-  <!-- Contact Info -->
-  <div class="text-white text-center mt-8 mb-4">
-    <div class="text-sm mb-2">Contact</div>
-    <div class="flex flex-wrap justify-center gap-4 text-sm">
-      <a href="mailto:i@rosenpin.io" class="hover:underline flex items-center gap-1">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
-        </svg>
-        i@rosenpin.io
-      </a>
-      <a href="https://github.com/rosenpin" target="_blank" class="hover:underline flex items-center gap-1">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"/>
-        </svg>
-        github.com/rosenpin
-      </a>
-      <a href="https://www.linkedin.com/in/tomer-r/" target="_blank" class="hover:underline flex items-center gap-1">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 3A2 2 0 0 1 21 5V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3H19M18.5 18.5V13.2A3.26 3.26 0 0 0 15.24 9.94C14.39 9.94 13.4 10.46 12.92 11.24V10.13H10.13V18.5H12.92V13.57C12.92 12.8 13.54 12.17 14.31 12.17A1.4 1.4 0 0 1 15.71 13.57V18.5H18.5M6.88 8.56A1.68 1.68 0 0 0 8.56 6.88C8.56 5.95 7.81 5.19 6.88 5.19A1.69 1.69 0 0 0 5.19 6.88C5.19 7.81 5.95 8.56 6.88 8.56M8.27 18.5V10.13H5.5V18.5H8.27Z"/>
-        </svg>
-        LinkedIn
-      </a>
-    </div>
-  </div>
-  
-  <!-- Footer -->
-  <footer class="text-white text-xs text-center pb-6">
-    All rights reserved to rosenpin 2025
-  </footer>
 </body>
 </html>

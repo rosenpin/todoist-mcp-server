@@ -3,110 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connect Todoist to Claude - MCP Server Setup</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'claude-orange': '#CD7F32',
-            'todoist-red': '#e44332'
-          }
-        }
-      }
-    }
-  </script>
+  <title>Todoist MCP Server</title>
+  <meta name="description" content="Connect Todoist to Claude, ChatGPT, Gemini, Cursor and any other MCP-compatible AI assistant.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>/*{{STYLES}}*/</style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-claude-orange to-todoist-red flex flex-col items-center justify-center p-6 font-sans">
-  <!-- Header  -->
-  <h1 class="text-white text-3xl sm:text-4xl font-semibold text-center mb-10 drop-shadow-lg">
-    Connect Todoist to Claude
-  </h1>
-  
-  <!-- Main card -->
-  <div class="bg-white rounded-2xl p-8 sm:p-12 max-w-2xl w-full shadow-2xl text-center">
-    <h2 class="text-2xl sm:text-3xl font-semibold text-gray-900 mb-4">
-      Claude + Todoist
-    </h2>
-    <p class="text-gray-600 mb-10 leading-relaxed">
-      Connect your Todoist account to create a personalized MCP server URL for Claude.
-    </p>
-    
-    <!-- Connect button -->
-    <a href="/auth" 
-       class="inline-flex items-center gap-3 bg-gradient-to-r from-todoist-red to-red-600 
-              text-white px-8 py-4 rounded-xl text-lg font-semibold 
-              hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 mb-10">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7M2,7H13V9H4V15H13V17H2V7M20,9H17V15H20V9M7.5,13A1.5,1.5 0 0,1 6,11.5A1.5,1.5 0 0,1 7.5,10A1.5,1.5 0 0,1 9,11.5A1.5,1.5 0 0,1 7.5,13Z"/>
-      </svg>
-      Connect with Todoist
-    </a>
-    
-    <!-- Steps -->
-    <div class="text-left mb-8">
-      <div class="text-lg font-semibold text-gray-900 mb-6 text-center">What happens next</div>
-      <ol class="space-y-4">
-        <li class="flex items-start gap-4">
-          <div class="bg-gradient-to-r from-claude-orange to-todoist-red text-white w-6 h-6 
-                      rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
-            1
-          </div>
-          <span class="text-gray-700 leading-relaxed">
-            You'll be securely redirected to Todoist to authorize access
-          </span>
-        </li>
-        <li class="flex items-start gap-4">
-          <div class="bg-gradient-to-r from-claude-orange to-todoist-red text-white w-6 h-6 
-                      rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
-            2
-          </div>
-          <span class="text-gray-700 leading-relaxed">
-            We'll generate your personal MCP integration URL
-          </span>
-        </li>
-        <li class="flex items-start gap-4">
-          <div class="bg-gradient-to-r from-claude-orange to-todoist-red text-white w-6 h-6 
-                      rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
-            3
-          </div>
-          <span class="text-gray-700 leading-relaxed">
-            Add the URL to Claude to start using Todoist tools
-          </span>
-        </li>
+<body>
+  <div class="wrap">
+    <header><a href="/"><img src="/favicon.svg" alt="">Todoist MCP</a></header>
+
+    <main>
+      <h1>Use Todoist from your AI assistant</h1>
+      <p class="lead">
+        A hosted Model Context Protocol server for Todoist. Works with Claude, ChatGPT,
+        Gemini CLI, Cursor, VS Code and any other client that supports remote MCP servers.
+      </p>
+
+      <a class="btn" href="/auth">Connect Todoist</a>
+
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li>Sign in to Todoist and approve access.</li>
+        <li>You get a personal server URL.</li>
+        <li>Add that URL to your assistant as a custom connector or MCP server.</li>
       </ol>
-    </div>
+
+      <h2>What your assistant can do</h2>
+      <p class="muted">
+        Read, create, update and complete tasks; manage projects, sections and labels; read and add comments.
+      </p>
+    </main>
+
+    <footer>
+      <a href="https://github.com/rosenpin/todoist-mcp-server" target="_blank" rel="noopener">Source on GitHub</a>
+      <a href="mailto:i@rosenpin.io">i@rosenpin.io</a>
+      <span>Not affiliated with Doist.</span>
+    </footer>
   </div>
-  
-  <!-- Contact Info -->
-  <div class="text-white text-center mt-8 mb-4">
-    <div class="text-sm mb-2">Contact</div>
-    <div class="flex flex-wrap justify-center gap-4 text-sm">
-      <a href="mailto:i@rosenpin.io" class="hover:underline flex items-center gap-1">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
-        </svg>
-        i@rosenpin.io
-      </a>
-      <a href="https://github.com/rosenpin" target="_blank" class="hover:underline flex items-center gap-1">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"/>
-        </svg>
-        github.com/rosenpin
-      </a>
-      <a href="https://www.linkedin.com/in/tomer-r/" target="_blank" class="hover:underline flex items-center gap-1">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 3A2 2 0 0 1 21 5V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3H19M18.5 18.5V13.2A3.26 3.26 0 0 0 15.24 9.94C14.39 9.94 13.4 10.46 12.92 11.24V10.13H10.13V18.5H12.92V13.57C12.92 12.8 13.54 12.17 14.31 12.17A1.4 1.4 0 0 1 15.71 13.57V18.5H18.5M6.88 8.56A1.68 1.68 0 0 0 8.56 6.88C8.56 5.95 7.81 5.19 6.88 5.19A1.69 1.69 0 0 0 5.19 6.88C5.19 7.81 5.95 8.56 6.88 8.56M8.27 18.5V10.13H5.5V18.5H8.27Z"/>
-        </svg>
-        LinkedIn
-      </a>
-    </div>
-  </div>
-  
-  <!-- Footer -->
-  <footer class="text-white text-xs text-center pb-6">
-    All rights reserved to rosenpin 2025
-  </footer>
 </body>
 </html>
