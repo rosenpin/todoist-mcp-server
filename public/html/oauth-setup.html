@@ -10,35 +10,39 @@
 </head>
 <body>
   <div class="wrap">
-    <header><a href="/"><img src="/favicon.svg" alt="">Todoist MCP</a></header>
+<!--{{include:header}}-->
 
     <main>
       <h1>Use Todoist from your AI assistant</h1>
       <p class="lead">
-        A hosted Model Context Protocol server for Todoist. Works with Claude, ChatGPT,
-        Gemini CLI, Cursor, VS Code and any other client that supports remote MCP servers.
+        A hosted Model Context Protocol server for Todoist. Add this URL to Claude, ChatGPT, Gemini,
+        Cursor or VS Code, then sign in with Todoist when prompted.
       </p>
 
-      <a class="btn" href="/auth">Connect Todoist</a>
+      <div class="field">
+        <input id="mcpUrl" type="text" value="{{ORIGIN}}/mcp" readonly aria-label="MCP server URL">
+        <button class="btn" type="button" data-copy="mcpUrl">Copy</button>
+      </div>
 
-      <h2>How it works</h2>
-      <ol class="steps">
-        <li>Sign in to Todoist and approve access.</li>
-        <li>You get a personal server URL.</li>
-        <li>Add that URL to your assistant as a custom connector or MCP server.</li>
-      </ol>
+      <h2>Add it to your client</h2>
+<!--{{include:clients}}-->
 
       <h2>What your assistant can do</h2>
-      <p class="muted">
-        Read, create, update and complete tasks; manage projects, sections and labels; read and add comments.
-      </p>
+      <dl class="tools">
+        <dt>Tasks</dt><dd>get_tasks, create_task, update_task, complete_task, uncomplete_task</dd>
+        <dt>Projects</dt><dd>list_projects, create_project, update_project, delete_project</dd>
+        <dt>Sections</dt><dd>get_sections, create_section</dd>
+        <dt>Labels</dt><dd>get_labels, create_label</dd>
+        <dt>Comments</dt><dd>get_comments, create_comment</dd>
+      </dl>
+
+      <h2>Client without OAuth sign-in?</h2>
+      <p class="muted">Get a personal server URL instead. It has your access built in, so treat it like a password.</p>
+      <a class="btn btn-secondary" href="/auth">Get a personal URL</a>
     </main>
 
-    <footer>
-      <a href="https://github.com/rosenpin/todoist-mcp-server" target="_blank" rel="noopener">Source on GitHub</a>
-      <a href="mailto:i@rosenpin.io">i@rosenpin.io</a>
-      <span>Not affiliated with Doist.</span>
-    </footer>
+<!--{{include:footer}}-->
   </div>
+<!--{{include:copy}}-->
 </body>
 </html>

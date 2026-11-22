@@ -1,0 +1,50 @@
+      <div class="card">
+        <details open>
+          <summary>Claude</summary>
+          <div>
+            <p>In claude.ai or Claude Desktop, open <strong>Settings → Connectors → Add custom connector</strong>, name it “Todoist”, paste the URL, then choose <strong>Connect</strong> and sign in with Todoist.</p>
+            <p>For Claude Code, run this, then sign in from <code>/mcp</code> inside Claude Code:</p>
+            <pre>claude mcp add --transport http todoist {{ORIGIN}}/mcp</pre>
+          </div>
+        </details>
+        <details>
+          <summary>ChatGPT</summary>
+          <div>
+            <p>Enable <strong>Developer mode</strong> under Settings → Apps &amp; Connectors → Advanced, then choose <strong>Create</strong>, paste the URL, set authentication to <strong>OAuth</strong> and sign in with Todoist.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Gemini</summary>
+          <div>
+            <p>Add the URL as a connector and sign in with Todoist when prompted.</p>
+            <p>For Gemini CLI, add this to <code>~/.gemini/settings.json</code>, then run <code>/mcp auth todoist</code>:</p>
+            <pre>{
+  "mcpServers": {
+    "todoist": { "httpUrl": "{{ORIGIN}}/mcp" }
+  }
+}</pre>
+          </div>
+        </details>
+        <details>
+          <summary>Cursor</summary>
+          <div>
+            <p>Add this to <code>~/.cursor/mcp.json</code>, then sign in with Todoist when Cursor asks:</p>
+            <pre>{
+  "mcpServers": {
+    "todoist": { "url": "{{ORIGIN}}/mcp" }
+  }
+}</pre>
+          </div>
+        </details>
+        <details>
+          <summary>VS Code</summary>
+          <div>
+            <p>Add this to <code>.vscode/mcp.json</code>, then sign in with Todoist when VS Code asks:</p>
+            <pre>{
+  "servers": {
+    "todoist": { "type": "http", "url": "{{ORIGIN}}/mcp" }
+  }
+}</pre>
+          </div>
+        </details>
+      </div>

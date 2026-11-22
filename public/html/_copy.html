@@ -1,0 +1,15 @@
+  <script>
+    for (const btn of document.querySelectorAll('[data-copy]')) {
+      btn.addEventListener('click', async () => {
+        const input = document.getElementById(btn.dataset.copy);
+        try {
+          await navigator.clipboard.writeText(input.value);
+          btn.textContent = 'Copied';
+        } catch {
+          input.select();
+          btn.textContent = 'Press ⌘C';
+        }
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+  </script>

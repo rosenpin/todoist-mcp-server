@@ -4,126 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="no-referrer">
-  <title>Connected · Todoist MCP</title>
+  <title>Personal URL · Todoist MCP</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <style>/*{{STYLES}}*/</style>
 </head>
 <body>
   <div class="wrap">
-    <header><a href="/"><img src="/favicon.svg" alt="">Todoist MCP</a></header>
+<!--{{include:header}}-->
 
     <main>
-      <h1>Todoist is connected</h1>
-      <p class="lead">Add this server URL to your AI assistant to start using your tasks.</p>
+      <h1>Your personal server URL</h1>
+      <p class="lead">For MCP clients that can't sign in with OAuth. Add it as a remote MCP server; it works over Streamable HTTP and SSE.</p>
 
       <div class="field">
-        <input id="mcpUrl" type="text" value="{{MCP_URL}}" readonly aria-label="Your MCP server URL">
-        <button id="copyBtn" class="btn" type="button">Copy</button>
+        <input id="personalUrl" type="text" value="{{MCP_URL}}" readonly aria-label="Your personal MCP server URL">
+        <button class="btn" type="button" data-copy="personalUrl">Copy</button>
       </div>
-      <p class="note">This URL gives full access to your Todoist account. Keep it private, like a password.</p>
+      <p class="note"><strong>This URL is a secret.</strong> Anyone who has it can read and change your Todoist data. Don't share it or paste it anywhere public.</p>
 
-      <h2>Add it to your client</h2>
-      <div class="card">
-        <details open>
-          <summary>Claude</summary>
-          <div>
-            <p>In claude.ai or Claude Desktop, open <strong>Settings → Connectors → Add custom connector</strong>, name it “Todoist” and paste the URL.</p>
-            <p>For Claude Code, run:</p>
-            <pre>claude mcp add --transport http todoist "{{MCP_URL}}"</pre>
-            <p class="small muted" style="margin-top: 8px"><a href="https://www.youtube.com/watch?v=62coj9VCJo8" target="_blank" rel="noopener">Video walkthrough</a></p>
-          </div>
-        </details>
-        <details>
-          <summary>ChatGPT</summary>
-          <div>
-            <p>Enable <strong>Developer mode</strong> under Settings → Apps &amp; Connectors → Advanced, then choose <strong>Create</strong>, paste the URL and set authentication to “No authentication”.</p>
-          </div>
-        </details>
-        <details>
-          <summary>Gemini</summary>
-          <div>
-            <p>Gemini uses Todoist sign-in instead of the URL above. Add this server and sign in when prompted:</p>
-            <pre>{{ORIGIN}}/mcp</pre>
-            <p style="margin-top: 12px">For Gemini CLI, add to <code>~/.gemini/settings.json</code>:</p>
-            <pre>{
-  "mcpServers": {
-    "todoist": { "httpUrl": "{{ORIGIN}}/mcp" }
-  }
-}</pre>
-          </div>
-        </details>
-        <details>
-          <summary>Cursor</summary>
-          <div>
-            <p>Add to <code>~/.cursor/mcp.json</code>:</p>
-            <pre>{
-  "mcpServers": {
-    "todoist": { "url": "{{MCP_URL}}" }
-  }
-}</pre>
-          </div>
-        </details>
-        <details>
-          <summary>VS Code</summary>
-          <div>
-            <p>Add to <code>.vscode/mcp.json</code>:</p>
-            <pre>{
-  "servers": {
-    "todoist": { "type": "http", "url": "{{MCP_URL}}" }
-  }
-}</pre>
-          </div>
-        </details>
-        <details>
-          <summary>Other clients</summary>
-          <div>
-            <p>Add the URL as a remote MCP server. It speaks Streamable HTTP and, for older clients, SSE. No extra authentication is needed.</p>
-          </div>
-        </details>
+      <h2>Using Claude, ChatGPT, Gemini, Cursor or VS Code?</h2>
+      <p class="muted">These support Todoist sign-in, so you don't need a secret URL. Use this instead and sign in when prompted:</p>
+      <div class="field">
+        <input id="mcpUrl" type="text" value="{{ORIGIN}}/mcp" readonly aria-label="MCP server URL">
+        <button class="btn btn-secondary" type="button" data-copy="mcpUrl">Copy</button>
       </div>
-
-      <h2>Available tools</h2>
-      <dl class="tools">
-        <dt>Tasks</dt><dd>get_tasks, create_task, update_task, complete_task, uncomplete_task</dd>
-        <dt>Projects</dt><dd>list_projects, create_project, update_project, delete_project</dd>
-        <dt>Sections</dt><dd>get_sections, create_section</dd>
-        <dt>Labels</dt><dd>get_labels, create_label</dd>
-        <dt>Comments</dt><dd>get_comments, create_comment</dd>
-      </dl>
+      <p class="small" style="margin-top: 8px"><a href="/">Setup steps for each client</a></p>
 
       <h2>Disconnect</h2>
       <div class="danger-zone">
-        <p class="muted small">Deletes your stored Todoist token. This URL stops working immediately.</p>
+        <p class="muted small">Deletes your stored Todoist token. This personal URL stops working immediately.</p>
         <button id="deleteBtn" class="btn btn-danger" type="button" data-user-id="{{USER_ID}}">Disconnect</button>
       </div>
       <p id="deleteError" class="small" style="color: var(--danger); margin-top: 8px" hidden></p>
     </main>
 
-    <footer>
-      <a href="https://github.com/rosenpin/todoist-mcp-server" target="_blank" rel="noopener">Source on GitHub</a>
-      <a href="mailto:i@rosenpin.io">i@rosenpin.io</a>
-      <span>Not affiliated with Doist.</span>
-    </footer>
+<!--{{include:footer}}-->
   </div>
-
+<!--{{include:copy}}-->
   <script>
-    const copyBtn = document.getElementById('copyBtn');
-    copyBtn.addEventListener('click', async () => {
-      const input = document.getElementById('mcpUrl');
-      try {
-        await navigator.clipboard.writeText(input.value);
-        copyBtn.textContent = 'Copied';
-      } catch {
-        input.select();
-        copyBtn.textContent = 'Press ⌘C';
-      }
-      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-    });
-
     const deleteBtn = document.getElementById('deleteBtn');
     const deleteError = document.getElementById('deleteError');
     deleteBtn.addEventListener('click', async () => {
-      if (!confirm('Disconnect Todoist? Your server URL will stop working and you will need to connect again to get a new one.')) return;
+      if (!confirm('Disconnect Todoist? Your personal URL will stop working and you will need to connect again to get a new one.')) return;
       deleteBtn.disabled = true;
       deleteError.hidden = true;
       try {
