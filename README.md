@@ -1,74 +1,46 @@
-# Todoist MCP Connector
+# Todoist MCP Server
 
-<div align="center">
+A hosted [Model Context Protocol](https://modelcontextprotocol.io) server for Todoist. Connect it to Claude, ChatGPT, Gemini CLI, Cursor, VS Code or any other MCP client and manage your tasks in plain language.
 
-![Logo](ART/icon.png)
+**Live service: [todoistmcp.rosenpin.io](https://todoistmcp.rosenpin.io)**
 
-</div>
-An MCP connector that connects Todoist to Claude, enabling direct task management through natural language conversations using the Model Context Protocol.
+## Quick start
 
-## Live Service
+1. Open [todoistmcp.rosenpin.io](https://todoistmcp.rosenpin.io) and connect your Todoist account.
+2. Copy your personal server URL. Keep it private: it grants access to your Todoist account.
+3. Add it to your client:
 
-= **[todoistmcp.rosenpin.io](https://todoistmcp.rosenpin.io)**
+| Client | How |
+| --- | --- |
+| Claude (web / desktop) | Settings → Connectors → Add custom connector |
+| Claude Code | `claude mcp add --transport http todoist "<URL>"` |
+| ChatGPT | Settings → Apps & Connectors → Advanced → Developer mode, then Create |
+| Gemini CLI | `~/.gemini/settings.json`: `{"mcpServers": {"todoist": {"httpUrl": "<URL>"}}}` |
+| Cursor | `~/.cursor/mcp.json`: `{"mcpServers": {"todoist": {"url": "<URL>"}}}` |
+| VS Code | `.vscode/mcp.json`: `{"servers": {"todoist": {"type": "http", "url": "<URL>"}}}` |
 
-## What is this?
+The server speaks Streamable HTTP and, for older clients, SSE, both on the same URL.
 
-This MCP connector allows Claude to connect to your Todoist account, giving you the ability to:
+## Tools
 
-- Create, read, update, and complete tasks
-- Manage projects and sections
-- Add comments and labels
-- Query your task data using natural language
+- **Tasks:** `get_tasks`, `create_task`, `update_task`, `complete_task`, `uncomplete_task`
+- **Projects:** `list_projects`, `create_project`, `update_project`, `delete_project`
+- **Sections:** `get_sections`, `create_section`
+- **Labels:** `get_labels`, `create_label`
+- **Comments:** `get_comments`, `create_comment`
 
-Instead of switching between Claude and Todoist, you can manage your tasks directly in your Claude conversations.
+## Development
 
-## Quick Start
+Runs on Cloudflare Workers with D1 for token storage and Durable Objects for MCP sessions.
 
-1. **Visit [todoistmcp.rosenpin.io](https://todoistmcp.rosenpin.io)**
-2. **Connect your Todoist account** via OAuth authentication
-3. **Copy your personal connector URL**
-4. **Connect to Claude:**
-   - Go to Claude Settings → Integrations
-   - Add Custom Integration
-   - Name: "Todoist"
-   - URL: Your personal connector URL
+```sh
+npm install
+cp .env.example .dev.vars   # fill in your Todoist OAuth app credentials
+npm run dev
+```
 
-## Tools Available to Claude
-
-This connector gives Claude access to the following Todoist tools:
-
-### Task Management
-
-- `get_tasks` - Retrieve tasks with filtering options
-- `create_task` - Create new tasks with due dates, priorities, labels
-- `update_task` - Modify existing tasks
-- `complete_task` - Mark tasks as done
-- `uncomplete_task` - Reopen completed tasks
-
-### Project Organization
-
-- `list_projects` - Get all your projects
-- `create_project` - Create new projects
-- `update_project` - Modify project settings
-- `delete_project` - Remove projects
-- `get_sections` - List sections within projects
-- `create_section` - Create new sections
-
-### Comments & Labels
-
-- `get_comments` - Retrieve comments on tasks/projects
-- `create_comment` - Add comments
-- `get_labels` - List all labels
-- `create_label` - Create new labels
-
-## Technical Details
-
-This connector implements the [Model Context Protocol](https://modelcontextprotocol.io) specification. Each tool returns structured data that Claude can understand and act upon.
+`public/` holds the web pages; `npm run build-templates` bundles them into `src/ui-templates-generated.ts`, and `dev` and `deploy` run it automatically.
 
 ## Support
 
-For issues or questions:
-
-- Check existing GitHub issues
-- Create a new issue with detailed information
-- Include relevant error messages and steps to reproduce
+Open an [issue](https://github.com/rosenpin/todoist-mcp-server/issues) or email i@rosenpin.io.
